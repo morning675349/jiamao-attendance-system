@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>薪資管理系統</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Noto Sans TC',sans-serif;background:#f0f2f5;color:#333;font-size:14px}
+  header{background:#1a73e8;color:#fff;padding:14px 20px;display:flex;align-items:center;gap:12px}
+  header h1{font-size:18px;font-weight:600}
+  header a{color:rgba(255,255,255,.8);text-decoration:none;font-size:13px;margin-left:auto}
+  header a:hover{color:#fff}
+  .tabs{display:flex;background:#fff;border-bottom:2px solid #e0e0e0;padding:0 20px}
+  .tab{padding:12px 20px;cursor:pointer;font-size:14px;color:#666;border-bottom:3px solid transparent;margin-bottom:-2px;transition:.2s}
+  .tab.active{color:#1a73e8;border-bottom-color:#1a73e8;font-weight:600}
+  .tab-panel{display:none;padding:20px}
+  .tab-panel.active{display:block}
+  .card{background:#fff;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.08);padding:20px;margin-bottom:16px}
+  .card-title{font-size:15px;font-weight:600;margin-bottom:14px;color:#1a73e8}
+  .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+  select,input[type=text],input[type=number],input[type=month]{padding:7px 10px;border:1px solid #d0d0d0;border-radius:6px;font-size:13px;background:#fff}
+  select:focus,input:focus{outline:none;border-color:#1a73e8}
+  .btn{padding:8px 16px;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500;transition:.15s}
+  .btn-primary{background:#1a73e8;color:#fff}.btn-primary:hover{background:#1557b0}
+  .btn-success{background:#34a853;color:#fff}.btn-success:hover{background:#2d8f47}
+  .btn-warn{background:#fbbc04;color:#333}.btn-warn:hover{background:#e0a800}
+  .btn-danger{background:#ea4335;color:#fff}.btn-danger:hover{background:#c5221f}
+  .btn-sm{padding:5px 10px;font-size:12px}
+  .btn-outline{background:#fff;border:1px solid #d0d0d0;color:#555}.btn-outline:hover{background:#f5f5f5}
+  table{width:100%;border-collapse:collapse}
+  th{background:#f8f9fa;font-weight:600;color:#555;padding:10px 12px;text-align:left;border-bottom:2px solid #e8eaed;font-size:12px;white-space:nowrap}
+  td{padding:10px 12px;border-bottom:1px solid #f0f0f0;vertical-align:middle;font-size:13px}
+  tr:hover td{background:#fafbff}
+  .badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+  .badge-pending{background:#fff3e0;color:#e65100}
+  .badge-approved{background:#e8f5e9;color:#2e7d32}
+  .badge-rejected{background:#ffebee;color:#c62828}
+  .badge-draft{background:#e3f2fd;color:#1565c0}
+  .badge-confirmed{background:#e8f5e9;color:#2e7d32}
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;align-items:center;justify-content:center}
+  .modal-overlay.open{display:flex}
+  .modal{background:#fff;border-radius:12px;width:680px;max-width:95vw;max-height:90vh;overflow-y:auto;padding:24px;position:relative}
+  .modal-title{font-size:16px;font-weight:700;margin-bottom:18px;color:#333}
+  .close-btn{position:absolute;top:14px;right:16px;font-size:20px;cursor:pointer;color:#999;background:none;border:none;line-height:1}
+  .close-btn:hover{color:#333}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .form-grid.wide{grid-template-columns:1fr}
+  .form-group{display:flex;flex-direction:column;gap:4px}
+  .form-group label{font-size:12px;color:#666;font-weight:500}
+  .form-group input,.form-group select{padding:8px 10px;border:1px solid #d0d0d0;border-radius:6px;font-size:13px}
+  .form-group input:focus,.form-group select:focus{outline:none;border-color:#1a73e8}
+  .section-header{font-size:12px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:.5px;margin:14px 0 8px;padding-top:10px;border-top:1px solid #eee}
+  .amount{font-family:monospace;font-size:13px}
+  .total-row td{font-weight:700;background:#f8f9fa!important}
+  .net-row td{font-weight:700;font-size:14px;color:#1a73e8;background:#e8f0fe!important}
+  .company-tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600}
+  .tag-jiamao{background:#e8f0fe;color:#1a73e8}
+  .tag-shengxing{background:#fce4ec;color:#c62828}
+  .slip-area{display:none}
+  @media print{
+    body>*{display:none!important}
+    .slip-area{display:block!important;font-family:'Noto Sans TC',sans-serif;font-size:12px;color:#000;padding:20px}
+    .slip-table{width:100%;border-collapse:collapse;margin-top:10px}
+    .slip-table td,.slip-table th{border:1px solid #999;padding:6px 8px;font-size:12px}
+    .slip-title{text-align:center;font-size:16px;font-weight:700;margin-bottom:4px}
+    .slip-subtitle{text-align:center;font-size:13px;margin-bottom:12px;color:#555}
+    .slip-meta{display:flex;gap:40px;margin-bottom:8px;font-size:12px}
+    .slip-remarks{margin-top:10px;font-size:11px;color:#555;border-top:1px solid #ccc;padding-top:6px}
+  }
+  .empty{text-align:center;padding:40px;color:#aaa;font-size:14px}
+  #loginScreen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:#f0f2f5}
+  .login-card{background:#fff;border-radius:12px;padding:32px;width:340px;box-shadow:0 2px 12px rgba(0,0,0,.1);text-align:center}
+  .login-card h2{margin-bottom:20px;color:#1a73e8;font-size:18px}
+  .login-card input{width:100%;padding:10px;border:1px solid #d0d0d0;border-radius:6px;margin-bottom:12px;font-size:14px}
+  .login-card button{width:100%;padding:11px;background:#1a73e8;color:#fff;border:none;border-radius:6px;font-size:14px;cursor:pointer;font-weight:600}
+  .payroll-breakdown{display:grid;grid-template-columns:1fr 1fr;gap:0}
+  .breakdown-col{padding:0 10px}
+  .breakdown-col h4{font-size:12px;font-weight:700;color:#555;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #eee}
+  .breakdown-row{display:flex;justify-content:space-between;padding:3px 0;font-size:12px;border-bottom:1px solid #f5f5f5}
+  .breakdown-row.total{font-weight:700;border-top:1px solid #ccc;margin-top:4px;padding-top:5px}
+  .breakdown-row.net{font-weight:700;color:#1a73e8;font-size:13px}
+  .expand-row{background:#f8fafe}
+  .expand-row td{padding:12px 16px}
+  input[type=number]{-moz-appearance:textfield}
+  input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+</style>
+</head>
+<body>
+
+<!-- 登入 -->
+<div id="loginScreen">
+  <div class="login-card">
+    <h2>薪資管理系統</h2>
+    <input type="password" id="loginPwd" placeholder="管理員密碼" onkeydown="if(event.key==='Enter')doLogin()">
+    <button onclick="doLogin()">登入</button>
+    <p id="loginErr" style="color:#ea4335;font-size:12px;margin-top:8px"></p>
+  </div>
+</div>
+
+<!-- 主介面 -->
+<div id="mainApp" style="display:none">
+<header>
+  <h1>💰 薪資管理系統</h1>
+  <a href="/admin.html">← 返回打卡後台</a>
+</header>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('tab-settings')">薪資設定</div>
+  <div class="tab" onclick="switchTab('tab-overtime')">加班申請</div>
+  <div class="tab" onclick="switchTab('tab-payroll')">月薪計算</div>
+  <div class="tab" onclick="switchTab('tab-companies')">公司設定</div>
+</div>
+
+<!-- ─── Tab 1: 薪資設定 ─────────────────────── -->
+<div id="tab-settings" class="tab-panel active">
+  <div class="card">
+    <div class="card-title">員工薪資設定</div>
+    <div class="toolbar">
+      <select id="settingsCompanyFilter" onchange="loadSalarySettings()">
+        <option value="">所有公司</option>
+      </select>
+      <span style="color:#888;font-size:12px">點擊「編輯」設定員工底薪、津貼、投保級距</span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>姓名</th><th>部門</th><th>公司</th>
+          <th>底薪</th><th>職務加給</th>
+          <th>投保級距</th><th>眷屬人數</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody id="settingsTableBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ─── Tab 2: 加班申請 ─────────────────────── -->
+<div id="tab-overtime" class="tab-panel">
+  <div class="card">
+    <div class="card-title">加班申請管理</div>
+    <div class="toolbar">
+      <select id="otStatus" onchange="loadOvertimeRequests()">
+        <option value="pending">待審核</option>
+        <option value="approved">已核准</option>
+        <option value="rejected">已駁回</option>
+        <option value="">全部</option>
+      </select>
+      <input type="month" id="otMonth" onchange="loadOvertimeRequests()">
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>姓名</th><th>日期</th><th>時段</th><th>時數</th>
+          <th>原因</th><th>狀態</th><th>申請時間</th><th>操作</th>
+        </tr>
+      </thead>
+      <tbody id="otTableBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ─── Tab 3: 月薪計算 ─────────────────────── -->
+<div id="tab-payroll" class="tab-panel">
+  <div class="card">
+    <div class="card-title">月薪計算</div>
+    <div class="toolbar">
+      <select id="payCompany">
+        <option value="">選擇公司</option>
+      </select>
+      <input type="month" id="payMonth">
+      <button class="btn btn-primary" onclick="generatePayroll()">⚙️ 生成薪資</button>
+      <button class="btn btn-outline" onclick="loadPayrolls()">🔄 重新載入</button>
+    </div>
+    <div id="payrollList"></div>
+  </div>
+</div>
+
+<!-- ─── Tab 4: 公司設定 ─────────────────────── -->
+<div id="tab-companies" class="tab-panel">
+  <div id="companiesPanel"></div>
+</div>
+
+</div><!-- /mainApp -->
+
+<!-- 薪資設定 Modal -->
+<div class="modal-overlay" id="salaryModal">
+  <div class="modal">
+    <button class="close-btn" onclick="closeModal('salaryModal')">×</button>
+    <div class="modal-title" id="salaryModalTitle">薪資設定</div>
+    <form id="salaryForm" onsubmit="saveSalarySettings(event)">
+      <input type="hidden" id="sf_lineId">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>公司</label>
+          <select id="sf_companyId">
+            <option value="">請選擇</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>底薪（月薪）</label>
+          <input type="number" id="sf_baseSalary" min="0" required>
+        </div>
+        <div class="form-group">
+          <label>職務加給</label>
+          <input type="number" id="sf_jobAllowance" min="0" value="0">
+        </div>
+        <div class="form-group">
+          <label>全勤獎金（佳懋）</label>
+          <input type="number" id="sf_perfectAttendance" min="0" value="0">
+        </div>
+        <div class="form-group">
+          <label>交通費（佳懋）</label>
+          <input type="number" id="sf_transportAllowance" min="0" value="0">
+        </div>
+        <div class="form-group">
+          <label>電話費（佳懋）</label>
+          <input type="number" id="sf_phoneAllowance" min="0" value="0">
+        </div>
+        <div class="form-group">
+          <label>出差油資（佳懋設計部）</label>
+          <input type="number" id="sf_businessTripFuel" min="0" value="0">
+        </div>
+        <div class="form-group">
+          <label>季獎金（佳懋設計部）</label>
+          <input type="number" id="sf_quarterBonus" min="0" value="0">
+        </div>
+        <div class="form-group">
+          <label>績效獎金（晟涬）</label>
+          <input type="number" id="sf_performanceBonus" min="0" value="0">
+        </div>
+        <div class="form-group">
+          <label>支援其他部門津貼（晟涬）</label>
+          <input type="number" id="sf_supportAllowance" min="0" value="0">
+        </div>
+        <div class="form-group">
+          <label>駕駛津貼（晟涬）</label>
+          <input type="number" id="sf_driverAllowance" min="0" value="0">
+        </div>
+        <div class="form-group">
+          <label>技能津貼-天車（晟涬）</label>
+          <input type="number" id="sf_skillAllowance" min="0" value="0">
+        </div>
+        <div class="form-group">
+          <label>節日禮金（手動填）</label>
+          <input type="number" id="sf_holidayGift" min="0" value="0">
+        </div>
+        <div class="form-group">
+          <label>其他津貼</label>
+          <input type="number" id="sf_otherAllowance" min="0" value="0">
+        </div>
+      </div>
+      <div class="section-header">勞健保設定</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>投保薪資級距</label>
+          <select id="sf_insuranceBracket"></select>
+        </div>
+        <div class="form-group">
+          <label>眷屬人數（健保加乘）</label>
+          <input type="number" id="sf_dependentCount" min="0" value="0" max="10">
+        </div>
+      </div>
+      <div style="margin-top:4px;color:#888;font-size:11px">
+        勞保員工負擔 ≈ 投保薪資 × 2.3%　健保員工負擔 ≈ 投保薪資 × 1.551% × (1＋眷屬人數)
+      </div>
+      <div style="margin-top:16px;display:flex;gap:10px;justify-content:flex-end">
+        <button type="button" class="btn btn-outline" onclick="closeModal('salaryModal')">取消</button>
+        <button type="submit" class="btn btn-primary">儲存設定</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 加班審核 Modal -->
+<div class="modal-overlay" id="otModal">
+  <div class="modal" style="width:420px">
+    <button class="close-btn" onclick="closeModal('otModal')">×</button>
+    <div class="modal-title" id="otModalTitle">審核加班申請</div>
+    <input type="hidden" id="ot_id">
+    <div id="otModalContent" style="margin-bottom:14px;font-size:13px;line-height:1.8"></div>
+    <div class="form-group" style="margin-bottom:12px">
+      <label>備注（可選）</label>
+      <input type="text" id="ot_note" placeholder="例：已確認">
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn btn-outline" onclick="closeModal('otModal')">取消</button>
+      <button class="btn btn-danger btn-sm" onclick="reviewOT('rejected')">❌ 駁回</button>
+      <button class="btn btn-success btn-sm" onclick="reviewOT('approved')">✅ 核准</button>
+    </div>
+  </div>
+</div>
+
+<!-- 薪資單詳情 Modal -->
+<div class="modal-overlay" id="slipModal">
+  <div class="modal" style="width:740px">
+    <button class="close-btn" onclick="closeModal('slipModal')">×</button>
+    <div class="modal-title" id="slipModalTitle">薪資單</div>
+    <div id="slipContent"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px">
+      <button class="btn btn-outline" onclick="closeModal('slipModal')">關閉</button>
+      <button class="btn btn-warn" onclick="printSlip()">🖨️ 列印</button>
+      <button class="btn btn-success" id="confirmPayrollBtn" onclick="confirmPayroll()">✅ 確認發放</button>
+      <button class="btn btn-primary" onclick="notifyEmployee()">📲 推播通知</button>
+    </div>
+  </div>
+</div>
+
+<!-- 列印區（隱藏，列印時顯示）-->
+<div class="slip-area" id="printArea"></div>
+
+<script>
+let token = '';
+let companies = [];
+let currentSlipId = '';
+const now = new Date();
+const curMonth = now.toISOString().slice(0,7);
+
+// ── 登入 ────────────────────────────────────────
+async function doLogin() {
+  const pwd = document.getElementById('loginPwd').value;
+  const r = await fetch('/api/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({password:pwd}) });
+  if (r.ok) {
+    const d = await r.json();
+    token = d.token;
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('mainApp').style.display = 'block';
+    await init();
+  } else {
+    document.getElementById('loginErr').textContent = '密碼錯誤';
+  }
+}
+
+function api(path, opts={}) {
+  return fetch(path, { ...opts, headers: { 'x-admin-token': token, 'Content-Type':'application/json', ...(opts.headers||{}) } }).then(r=>r.json());
+}
+
+async function init() {
+  companies = await api('/api/payroll/companies');
+  populateCompanySelects();
+  populateInsuranceBrackets();
+  document.getElementById('otMonth').value = curMonth;
+  document.getElementById('payMonth').value = curMonth;
+  await Promise.all([loadSalarySettings(), loadOvertimeRequests(), loadPayrolls(), loadCompanies()]);
+}
+
+function populateCompanySelects() {
+  const selects = ['settingsCompanyFilter','payCompany','sf_companyId'];
+  selects.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const allOpt = id === 'settingsCompanyFilter' ? '<option value="">所有公司</option>' : id === 'payCompany' ? '<option value="">選擇公司</option>' : '<option value="">請選擇</option>';
+    el.innerHTML = allOpt + companies.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+  });
+}
+
+function populateInsuranceBrackets() {
+  const brackets = [26400,27600,28800,30300,31800,33300,34800,36300,38200,40100,42000,43900,45800,48200,50600,53000,55400,57800,60800,63800,66800,69800,72800,76500,80300,84000,87600,92100,96600,101100,105600,110100,115500,120900,126300,131700,137100,142500,147900,150000,182000];
+  const sel = document.getElementById('sf_insuranceBracket');
+  sel.innerHTML = brackets.map(b => `<option value="${b}">${b.toLocaleString()}</option>`).join('');
+}
+
+// ── Tab 切換 ────────────────────────────────────
+function switchTab(id) {
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', ['tab-settings','tab-overtime','tab-payroll','tab-companies'][i]===id));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id===id));
+}
+
+// ── 薪資設定 ────────────────────────────────────
+async function loadSalarySettings() {
+  const filter = document.getElementById('settingsCompanyFilter').value;
+  const data = await api('/api/payroll/salary-settings');
+  const tbody = document.getElementById('settingsTableBody');
+  const filtered = filter ? data.filter(e => (e.salarySettings.companyId || '') === filter) : data;
+  if (!filtered.length) { tbody.innerHTML = '<tr><td colspan="8" class="empty">尚無員工資料</td></tr>'; return; }
+  tbody.innerHTML = filtered.map(e => {
+    const s = e.salarySettings || {};
+    const co = companies.find(c => c.id === s.companyId);
+    const tag = s.companyId === 'jiamao' ? 'tag-jiamao' : s.companyId === 'shengxing' ? 'tag-shengxing' : '';
+    return `<tr>
+      <td>${e.name}</td>
+      <td>${e.department||'-'}</td>
+      <td><span class="company-tag ${tag}">${co?.name||'未設定'}</span></td>
+      <td class="amount">${s.baseSalary ? '$'+Number(s.baseSalary).toLocaleString() : '<span style="color:#aaa">未設定</span>'}</td>
+      <td class="amount">${s.jobAllowance ? '$'+Number(s.jobAllowance).toLocaleString() : '-'}</td>
+      <td class="amount">${s.insuranceBracket ? Number(s.insuranceBracket).toLocaleString() : '-'}</td>
+      <td>${s.dependentCount || 0}</td>
+      <td><button class="btn btn-outline btn-sm" onclick="openSalaryModal('${e.lineId}','${e.name}')">✏️ 編輯</button></td>
+    </tr>`;
+  }).join('');
+}
+
+async function openSalaryModal(lineId, name) {
+  document.getElementById('salaryModalTitle').textContent = `薪資設定 — ${name}`;
+  document.getElementById('sf_lineId').value = lineId;
+  const s = await api(`/api/payroll/salary-settings/${lineId}`);
+  const fields = ['companyId','baseSalary','jobAllowance','perfectAttendance','transportAllowance','phoneAllowance','businessTripFuel','quarterBonus','performanceBonus','supportAllowance','driverAllowance','skillAllowance','holidayGift','otherAllowance','dependentCount'];
+  fields.forEach(f => {
+    const el = document.getElementById('sf_'+f);
+    if (el) el.value = s[f] !== undefined ? s[f] : (f==='companyId'?'':0);
+  });
+  const bsel = document.getElementById('sf_insuranceBracket');
+  if (s.insuranceBracket) bsel.value = s.insuranceBracket;
+  openModal('salaryModal');
+}
+
+async function saveSalarySettings(e) {
+  e.preventDefault();
+  const lineId = document.getElementById('sf_lineId').value;
+  const fields = ['companyId','baseSalary','jobAllowance','perfectAttendance','transportAllowance','phoneAllowance','businessTripFuel','quarterBonus','performanceBonus','supportAllowance','driverAllowance','skillAllowance','holidayGift','otherAllowance','dependentCount','insuranceBracket'];
+  const data = {};
+  fields.forEach(f => {
+    const el = document.getElementById('sf_'+f);
+    if (!el) return;
+    data[f] = f==='companyId' ? el.value : Number(el.value)||0;
+  });
+  await api(`/api/payroll/salary-settings/${lineId}`, { method:'PUT', body:JSON.stringify(data) });
+  closeModal('salaryModal');
+  loadSalarySettings();
+  alert('✅ 薪資設定已儲存');
+}
+
+// ── 加班申請 ────────────────────────────────────
+async function loadOvertimeRequests() {
+  const status = document.getElementById('otStatus').value;
+  const month = document.getElementById('otMonth').value;
+  const params = new URLSearchParams();
+  if (status) params.set('status', status);
+  if (month) params.set('month', month);
+  const data = await api('/api/payroll/overtime-requests?' + params);
+  const tbody = document.getElementById('otTableBody');
+  if (!data.length) { tbody.innerHTML = '<tr><td colspan="8" class="empty">沒有加班申請</td></tr>'; return; }
+  tbody.innerHTML = data.map(r => {
+    const badge = r.status==='pending'?'badge-pending':r.status==='approved'?'badge-approved':'badge-rejected';
+    const statusTxt = r.status==='pending'?'待審核':r.status==='approved'?'已核准':'已駁回';
+    const canReview = r.status === 'pending';
+    return `<tr>
+      <td>${r.employeeName}</td>
+      <td>${r.date}</td>
+      <td>${r.startTime}～${r.endTime}</td>
+      <td style="font-weight:600">${r.hours}H</td>
+      <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.reason}">${r.reason}</td>
+      <td><span class="badge ${badge}">${statusTxt}</span></td>
+      <td style="color:#999;font-size:11px">${r.createdAt?.slice(0,10)||''}</td>
+      <td>${canReview ? `<button class="btn btn-primary btn-sm" onclick="openOTModal(${JSON.stringify(r).replace(/"/g,'&quot;')})">審核</button>` : (r.reviewNote?`<span style="color:#888;font-size:11px">${r.reviewNote}</span>`:'-')}</td>
+    </tr>`;
+  }).join('');
+}
+
+function openOTModal(r) {
+  document.getElementById('ot_id').value = r.id;
+  document.getElementById('ot_note').value = '';
+  document.getElementById('otModalContent').innerHTML = `
+    <b>${r.employeeName}</b> 申請加班<br>
+    日期：${r.date}<br>
+    時段：${r.startTime} ～ ${r.endTime}（${r.hours}H）<br>
+    原因：${r.reason}
+  `;
+  openModal('otModal');
+}
+
+async function reviewOT(status) {
+  const id = document.getElementById('ot_id').value;
+  const note = document.getElementById('ot_note').value;
+  await api(`/api/payroll/overtime-requests/${id}/review`, { method:'PUT', body:JSON.stringify({status,note}) });
+  closeModal('otModal');
+  loadOvertimeRequests();
+}
+
+// ── 月薪計算 ────────────────────────────────────
+async function generatePayroll() {
+  const companyId = document.getElementById('payCompany').value;
+  const monthVal = document.getElementById('payMonth').value;
+  if (!companyId) { alert('請選擇公司'); return; }
+  if (!monthVal) { alert('請選擇月份'); return; }
+  const [year, month] = monthVal.split('-');
+  if (!confirm(`確定要為「${companies.find(c=>c.id===companyId)?.name}」生成 ${year}年${month}月 薪資？\n（已有薪資單將被覆蓋重算）`)) return;
+  const r = await api('/api/payroll/generate', { method:'POST', body:JSON.stringify({year:Number(year),month:Number(month),companyId}) });
+  if (r.error) { alert('錯誤：' + r.error); return; }
+  alert(`✅ 已生成 ${r.length} 筆薪資草稿`);
+  loadPayrolls();
+}
+
+async function loadPayrolls() {
+  const companyId = document.getElementById('payCompany').value;
+  const monthVal = document.getElementById('payMonth').value;
+  const params = new URLSearchParams();
+  if (companyId) params.set('companyId', companyId);
+  if (monthVal) { const [y,m]=monthVal.split('-'); params.set('year',y); params.set('month',m); }
+  const data = await api('/api/payroll/payrolls?' + params);
+  const el = document.getElementById('payrollList');
+  if (!data.length) { el.innerHTML = '<div class="empty">尚無薪資資料，請先設定員工薪資後點擊「生成薪資」</div>'; return; }
+
+  // 依公司、月分分組
+  const groups = {};
+  data.forEach(p => {
+    const key = `${p.year}-${p.month}-${p.companyId}`;
+    if (!groups[key]) groups[key] = { year:p.year, month:p.month, companyId:p.companyId, payrolls:[] };
+    groups[key].payrolls.push(p);
+  });
+
+  el.innerHTML = Object.values(groups).map(g => {
+    const co = companies.find(c=>c.id===g.companyId);
+    const rows = g.payrolls.map(p => {
+      const badge = p.status==='confirmed'?'badge-confirmed':'badge-draft';
+      const statusTxt = p.status==='confirmed'?'已確認':'草稿';
+      return `<tr>
+        <td>${p.employeeName}</td>
+        <td>${p.department||'-'}</td>
+        <td class="amount">$${(p.totalIncome||0).toLocaleString()}</td>
+        <td class="amount" style="color:#ea4335">-$${(p.totalDeductions||0).toLocaleString()}</td>
+        <td class="amount" style="font-weight:700;color:#1a73e8">$${(p.netSalary||0).toLocaleString()}</td>
+        <td>${p.summary?.attendanceDays||0} 天</td>
+        <td>${p.summary?.totalOTHours||0} H</td>
+        <td>${p.summary?.totalLateMinutes||0} 分</td>
+        <td><span class="badge ${badge}">${statusTxt}</span></td>
+        <td>
+          <button class="btn btn-outline btn-sm" onclick="openSlipModal('${p.id}')">📄 詳情</button>
+        </td>
+      </tr>`;
+    }).join('');
+    const totalNet = g.payrolls.reduce((s,p)=>s+(p.netSalary||0),0);
+    return `<div class="card" style="margin-bottom:12px">
+      <div class="card-title">${g.year}年${g.month}月　${co?.name||g.companyId}</div>
+      <table>
+        <thead><tr><th>姓名</th><th>部門</th><th>應付合計</th><th>應扣合計</th><th>實領薪資</th><th>出勤天數</th><th>加班時數</th><th>遲到分鐘</th><th>狀態</th><th>操作</th></tr></thead>
+        <tbody>${rows}</tbody>
+        <tfoot><tr class="total-row"><td colspan="4" style="text-align:right;color:#555">本月合計薪資支出：</td><td class="amount" style="color:#1a73e8;font-size:14px">$${totalNet.toLocaleString()}</td><td colspan="5"></td></tr></tfoot>
+      </table>
+    </div>`;
+  }).join('');
+}
+
+async function openSlipModal(id) {
+  currentSlipId = id;
+  const p = await api(`/api/payroll/payrolls/${id}`);
+  const co = companies.find(c=>c.id===p.companyId);
+  document.getElementById('slipModalTitle').textContent = `${p.year}年${p.month}月 薪資單 — ${p.employeeName}`;
+  document.getElementById('confirmPayrollBtn').style.display = p.status==='confirmed' ? 'none' : '';
+
+  const inc = p.income || {};
+  const ded = p.deductions || {};
+  const incItems = [
+    ['底薪', inc.baseSalary], ['職務加給', inc.jobAllowance], ['全勤獎金', inc.perfectAttendance],
+    ['伙食津貼', inc.mealAllowance], ['加班伙食津貼', inc.overtimeMealAllowance], ['加班費', inc.overtimePay],
+    ['交通費', inc.transportAllowance], ['電話費', inc.phoneAllowance],
+    ['出差油資', inc.businessTripFuel], ['季獎金', inc.quarterBonus],
+    ['績效獎金', inc.performanceBonus], ['支援其他部門津貼', inc.supportAllowance],
+    ['駕駛津貼', inc.driverAllowance], ['技能津貼', inc.skillAllowance],
+    ['節日禮金', inc.holidayGift], ['其他津貼', inc.otherAllowance],
+  ].filter(([,v]) => v);
+
+  const dedItems = [
+    ['勞保費', ded.laborInsurance], ['健保費', ded.healthInsurance],
+    ['遲到扣款', ded.lateDeduction], ['假別扣款', ded.leaveDeduction],
+  ];
+
+  document.getElementById('slipContent').innerHTML = `
+    <div style="font-size:12px;color:#666;margin-bottom:12px">
+      公司：${co?.name||'-'}　　出勤${p.summary?.attendanceDays||0}天　加班${p.summary?.totalOTHours||0}H　遲到${p.summary?.totalLateMinutes||0}分　投保級距${(p.summary?.insuranceBracket||0).toLocaleString()}
+    </div>
+    <div class="payroll-breakdown">
+      <div class="breakdown-col">
+        <h4>應付薪資項目</h4>
+        ${incItems.map(([label,val])=>`<div class="breakdown-row"><span>${label}</span><span class="amount">$${Number(val||0).toLocaleString()}</span></div>`).join('')}
+        <div class="breakdown-row total"><span>應付合計</span><span class="amount">$${(p.totalIncome||0).toLocaleString()}</span></div>
+      </div>
+      <div class="breakdown-col">
+        <h4>應扣薪資項目</h4>
+        ${dedItems.map(([label,val])=>`<div class="breakdown-row"><span>${label}</span><span class="amount ${val?'':'empty'}">$${Number(val||0).toLocaleString()}</span></div>`).join('')}
+        <div class="breakdown-row total"><span>應扣合計</span><span class="amount" style="color:#ea4335">$${(p.totalDeductions||0).toLocaleString()}</span></div>
+      </div>
+    </div>
+    <div class="breakdown-row net" style="margin-top:12px;padding:10px;background:#e8f0fe;border-radius:6px;font-size:15px">
+      <span>✅ 實領薪資</span>
+      <span class="amount">$${(p.netSalary||0).toLocaleString()}</span>
+    </div>
+    ${p.notes ? `<div style="margin-top:10px;padding:8px 10px;background:#fffde7;border-radius:6px;font-size:12px">備注：${p.notes}</div>` : ''}
+    <div style="margin-top:12px">
+      <label style="font-size:12px;color:#666">備注</label>
+      <input type="text" id="slipNotes" value="${p.notes||''}" placeholder="備注..." style="width:100%;margin-top:4px;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px">
+    </div>
+  `;
+
+  // 準備列印資料
+  preparePrint(p, co);
+  openModal('slipModal');
+}
+
+async function confirmPayroll() {
+  if (!confirm('確認薪資並標記為已發放？')) return;
+  const notes = document.getElementById('slipNotes')?.value || '';
+  await api(`/api/payroll/payrolls/${currentSlipId}`, { method:'PUT', body:JSON.stringify({notes}) });
+  await api(`/api/payroll/payrolls/${currentSlipId}/confirm`, { method:'POST' });
+  alert('✅ 薪資已確認');
+  closeModal('slipModal');
+  loadPayrolls();
+}
+
+async function notifyEmployee() {
+  const notes = document.getElementById('slipNotes')?.value || '';
+  await api(`/api/payroll/payrolls/${currentSlipId}`, { method:'PUT', body:JSON.stringify({notes}) });
+  const r = await api(`/api/payroll/payrolls/${currentSlipId}/notify`, { method:'POST' });
+  if (r.error) alert('推播失敗：' + r.error);
+  else alert('✅ 薪資通知已推播給員工');
+}
+
+function preparePrint(p, co) {
+  const inc = p.income || {};
+  const ded = p.deductions || {};
+  const allInc = [
+    ['薪資', inc.baseSalary], ['職務加給', inc.jobAllowance], ['全勤', inc.perfectAttendance],
+    ['伙食津貼(80元/餐)', inc.mealAllowance], ['加班伙食津貼(80元/餐)', inc.overtimeMealAllowance],
+    ['加班費(H×1.34 / H×1.67)', inc.overtimePay],
+    ['其他津貼:交通費', inc.transportAllowance], ['其他津貼:電話費', inc.phoneAllowance],
+    ['其他津貼:出差油資', inc.businessTripFuel], ['季獎金', inc.quarterBonus],
+    ['績效獎金', inc.performanceBonus], ['其他津貼:支援其他部門', inc.supportAllowance],
+    ['其他津貼:駕駛津貼', inc.driverAllowance], ['其他技能津貼', inc.skillAllowance],
+    ['節日禮金', inc.holidayGift], ['其他津貼', inc.otherAllowance],
+  ];
+  const allDed = [
+    ['勞保費用', ded.laborInsurance], ['健保費用', ded.healthInsurance],
+    ['遲到扣款', ded.lateDeduction], ['假別扣款', ded.leaveDeduction],
+  ];
+  const maxRows = Math.max(allInc.length, allDed.length);
+  let rows = '';
+  for (let i = 0; i < maxRows; i++) {
+    const [il, iv] = allInc[i] || ['', ''];
+    const [dl, dv] = allDed[i] || ['', ''];
+    rows += `<tr>
+      <td>${il}</td><td style="text-align:right">${iv ? '$'+Number(iv).toLocaleString() : ''}</td>
+      <td>${dl}</td><td style="text-align:right">${dv !== undefined && dv !== '' ? '$'+Number(dv).toLocaleString() : ''}</td>
+    </tr>`;
+  }
+  document.getElementById('printArea').innerHTML = `
+    <div class="slip-title">${co?.name||''}</div>
+    <div class="slip-subtitle">${p.year}年 ${p.month}月　薪資單</div>
+    <div class="slip-meta">
+      <span>員工姓名：${p.employeeName}</span>
+      <span>部門：${p.department||'-'}</span>
+      <span>出勤日數：${p.summary?.attendanceDays||0}</span>
+      <span>加班時數：${p.summary?.totalOTHours||0}</span>
+    </div>
+    <table class="slip-table">
+      <thead><tr><th>應付薪資項目</th><th>金額</th><th>應扣薪資項目</th><th>金額</th></tr></thead>
+      <tbody>${rows}</tbody>
+      <tfoot>
+        <tr style="font-weight:700"><td>應付合計金額</td><td style="text-align:right">$${(p.totalIncome||0).toLocaleString()}</td><td>應扣合計金額</td><td style="text-align:right">$${(p.totalDeductions||0).toLocaleString()}</td></tr>
+        <tr style="font-weight:700;font-size:13px"><td colspan="2">實領薪資：$${(p.netSalary||0).toLocaleString()}</td><td colspan="2">${p.notes?'備注：'+p.notes:''}</td></tr>
+      </tfoot>
+    </table>
+    <div class="slip-remarks">
+      *上班時間 ${co?.workStart||'08:00'}～${co?.workEnd||'17:00'}（午休12:00～13:00）　加班從 ${co?.overtimeStart||'17:30'} 起算<br>
+      *遲到以月薪÷240換算時薪×分鐘數扣除　*病假有醫療證明扣半薪，無證明以事假論
+    </div>
+  `;
+}
+
+function printSlip() {
+  window.print();
+}
+
+// ── 公司設定 ────────────────────────────────────
+async function loadCompanies() {
+  const co = await api('/api/payroll/companies');
+  document.getElementById('companiesPanel').innerHTML = co.map(c => `
+    <div class="card">
+      <div class="card-title">${c.name}</div>
+      <div class="form-grid" style="max-width:500px">
+        <div class="form-group">
+          <label>上班時間</label>
+          <input type="text" id="co_${c.id}_workStart" value="${c.workStart||'08:00'}" placeholder="08:00">
+        </div>
+        <div class="form-group">
+          <label>下班時間</label>
+          <input type="text" id="co_${c.id}_workEnd" value="${c.workEnd||'17:00'}" placeholder="17:00">
+        </div>
+        <div class="form-group">
+          <label>加班起算時間</label>
+          <input type="text" id="co_${c.id}_overtimeStart" value="${c.overtimeStart||'17:30'}" placeholder="17:30">
+        </div>
+      </div>
+      <div style="margin-top:12px">
+        <button class="btn btn-primary btn-sm" onclick="saveCompany('${c.id}')">儲存設定</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function saveCompany(id) {
+  const workStart = document.getElementById(`co_${id}_workStart`).value;
+  const workEnd = document.getElementById(`co_${id}_workEnd`).value;
+  const overtimeStart = document.getElementById(`co_${id}_overtimeStart`).value;
+  await api(`/api/payroll/companies/${id}`, { method:'PUT', body:JSON.stringify({workStart,workEnd,overtimeStart}) });
+  alert('✅ 已儲存');
+  companies = await api('/api/payroll/companies');
+}
+
+// ── Modal 工具 ────────────────────────────────────
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+</script>
+</body>
+</html>

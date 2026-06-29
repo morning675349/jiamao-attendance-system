@@ -1,0 +1,1756 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>佳懋-員工管理系統 · 管理後台</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+    .fade { animation: fadeIn .2s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; } }
+    :root { --gold: #C9A55A; --gold-dark: #A8843A; --gold-light: #F5E6C8; }
+    .btn-gold { background: var(--gold); color: #fff; }
+    .btn-gold:hover { background: var(--gold-dark); }
+    .input-gold:focus { outline: none; box-shadow: 0 0 0 2px var(--gold); }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+<!-- ── 登入畫面 ───────────────────────────────────────── -->
+<div id="loginScreen" class="min-h-screen flex items-center justify-center">
+  <div class="bg-white rounded-2xl shadow-lg p-8 w-full max-w-sm">
+    <div class="text-center mb-8">
+      <img src="/logo.png" alt="奇策整合行銷" class="h-20 object-contain mx-auto mb-3">
+      <h1 class="text-xl font-bold text-gray-800">佳懋-員工管理系統</h1>
+      <p class="text-gray-400 text-sm mt-1">管理員後台</p>
+    </div>
+    <input type="password" id="loginPwd" placeholder="管理員密碼"
+      class="input-gold w-full border border-gray-200 rounded-xl px-4 py-3 mb-3 text-sm"
+      onkeypress="if(event.key==='Enter')login()">
+    <button onclick="login()"
+      class="btn-gold w-full py-3 rounded-xl font-semibold transition text-sm">
+      登入
+    </button>
+    <p id="loginErr" class="text-red-500 text-sm text-center mt-3 hidden">密碼錯誤，請重試</p>
+  </div>
+</div>
+
+<!-- ── 主介面 ─────────────────────────────────────────── -->
+<div id="mainApp" class="hidden" style="display:none; height:100vh; flex-direction:row;">
+  <!-- Sidebar -->
+  <div class="w-52 text-white flex-shrink-0 flex flex-col" style="background:#1A1A1A">
+    <div class="px-4 py-4 border-b" style="border-color:#333">
+      <img src="/logo.png" alt="奇策" class="h-10 object-contain mb-2" style="filter:brightness(1.1)">
+      <div class="font-bold text-sm" style="color:#C9A55A">佳懋-員工管理系統</div>
+      <div class="text-xs mt-0.5" style="color:#888">管理員後台</div>
+    </div>
+    <nav class="flex-1 p-3 space-y-1">
+      <button onclick="tab('dashboard')" id="t-dashboard"
+        class="nav-btn w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition">
+        📊 儀表板
+      </button>
+      <button onclick="tab('attendance')" id="t-attendance"
+        class="nav-btn w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition">
+        📅 出勤記錄
+      </button>
+      <button onclick="tab('leaves')" id="t-leaves"
+        class="nav-btn w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition">
+        📋 假單審核
+      </button>
+      <button onclick="tab('punchReqs')" id="t-punchReqs"
+        class="nav-btn w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition">
+        📝 補打卡申請
+      </button>
+      <button onclick="tab('announcements')" id="t-announcements"
+        class="nav-btn w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition">
+        📢 公司公告
+      </button>
+      <button onclick="tab('employees')" id="t-employees"
+        class="nav-btn w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition">
+        👥 員工管理
+      </button>
+      <button onclick="tab('annual')" id="t-annual"
+        class="nav-btn w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition">
+        🌴 特休管理
+      </button>
+      <button onclick="tab('settings')" id="t-settings"
+        class="nav-btn w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition">
+        ⚙️ 打卡設定
+      </button>
+      <div class="px-3 pt-3 pb-1 text-xs font-semibold" style="color:#555;letter-spacing:.5px">薪資管理</div>
+      <button onclick="tab('payroll-settings')" id="t-payroll-settings"
+        class="nav-btn w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition">
+        💰 薪資設定
+      </button>
+      <button onclick="tab('overtime')" id="t-overtime"
+        class="nav-btn w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition">
+        ⏰ 加班申請
+      </button>
+      <button onclick="tab('payroll-calc')" id="t-payroll-calc"
+        class="nav-btn w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition">
+        📊 月薪計算
+      </button>
+      <button onclick="tab('companies')" id="t-companies"
+        class="nav-btn w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition">
+        🏢 公司設定
+      </button>
+    </nav>
+    <div class="p-4 border-t" style="border-color:#333">
+      <button onclick="logout()" class="text-xs hover:text-white w-full text-left transition" style="color:#888">登出</button>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div class="flex-1 overflow-auto bg-gray-50">
+
+    <!-- Dashboard -->
+    <div id="v-dashboard" class="hidden p-6 fade">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h2 class="text-xl font-bold">今日儀表板</h2>
+          <p id="dash-date" class="text-sm text-gray-400 mt-0.5"></p>
+        </div>
+        <button onclick="loadDashboard()" class="text-sm text-yellow-700 hover:underline">重新整理</button>
+      </div>
+
+      <!-- Stat cards -->
+      <div class="grid grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+          <div class="text-xs text-gray-400 mb-1">員工總數</div>
+          <div class="text-3xl font-bold" id="s-total">-</div>
+        </div>
+        <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+          <div class="text-xs text-gray-400 mb-1">今日已打卡</div>
+          <div class="text-3xl font-bold text-green-600" id="s-in">-</div>
+        </div>
+        <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+          <div class="text-xs text-gray-400 mb-1">尚未打卡</div>
+          <div class="text-3xl font-bold text-red-500" id="s-missing">-</div>
+        </div>
+        <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+          <div class="text-xs text-gray-400 mb-1">待審假單</div>
+          <div class="text-3xl font-bold text-amber-500" id="s-leaves">-</div>
+        </div>
+      </div>
+
+      <!-- Today table -->
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+        <div class="px-4 py-3 border-b flex items-center justify-between">
+          <h3 class="font-semibold text-sm">今日出勤明細</h3>
+        </div>
+        <div class="overflow-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="bg-gray-50 text-gray-400 text-xs">
+                <th class="px-4 py-2.5 text-left font-medium">姓名</th>
+                <th class="px-4 py-2.5 text-left font-medium">部門</th>
+                <th class="px-4 py-2.5 text-left font-medium">上班時間</th>
+                <th class="px-4 py-2.5 text-left font-medium">下班時間</th>
+                <th class="px-4 py-2.5 text-left font-medium">狀態</th>
+              </tr>
+            </thead>
+            <tbody id="dash-table"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Attendance -->
+    <div id="v-attendance" class="hidden p-6 fade">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-xl font-bold">出勤記錄</h2>
+        <div class="flex gap-2">
+          <button onclick="openAttModal()" class="btn-gold px-4 py-2 rounded-lg text-sm hover:opacity-90 transition">
+            + 手動新增
+          </button>
+          <button onclick="exportCSV()" class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-emerald-700 transition">
+            匯出 CSV
+          </button>
+        </div>
+      </div>
+      <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 mb-4 flex flex-wrap gap-3">
+        <input type="month" id="att-month" class="border border-gray-200 rounded-lg px-3 py-1.5 text-sm" onchange="loadAtt()">
+        <select id="att-emp" class="border border-gray-200 rounded-lg px-3 py-1.5 text-sm" onchange="loadAtt()">
+          <option value="">所有員工</option>
+        </select>
+      </div>
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+        <div class="overflow-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="bg-gray-50 text-gray-400 text-xs">
+                <th class="px-4 py-2.5 text-left font-medium">日期</th>
+                <th class="px-4 py-2.5 text-left font-medium">姓名</th>
+                <th class="px-4 py-2.5 text-left font-medium">部門</th>
+                <th class="px-4 py-2.5 text-left font-medium">上班</th>
+                <th class="px-4 py-2.5 text-left font-medium">下班</th>
+                <th class="px-4 py-2.5 text-left font-medium">工時</th>
+                <th class="px-4 py-2.5 text-left font-medium">狀態</th>
+                <th class="px-4 py-2.5 text-left font-medium">操作</th>
+              </tr>
+            </thead>
+            <tbody id="att-table"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Attendance Edit Modal -->
+    <div id="att-modal" class="hidden fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+      <div class="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm fade">
+        <h3 class="font-bold text-lg mb-4" id="att-modal-title">編輯出勤記錄</h3>
+        <input type="hidden" id="att-edit-id">
+        <div class="space-y-3">
+          <div>
+            <label class="text-xs text-gray-500 mb-1 block">員工</label>
+            <select id="att-edit-emp" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></select>
+          </div>
+          <div>
+            <label class="text-xs text-gray-500 mb-1 block">日期</label>
+            <input type="date" id="att-edit-date" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-xs text-gray-500 mb-1 block">上班時間</label>
+              <input type="time" id="att-edit-checkin" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
+            </div>
+            <div>
+              <label class="text-xs text-gray-500 mb-1 block">下班時間</label>
+              <input type="time" id="att-edit-checkout" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
+            </div>
+          </div>
+          <div>
+            <label class="text-xs text-gray-500 mb-1 block">狀態</label>
+            <select id="att-edit-status" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
+              <option value="normal">正常</option>
+              <option value="late">遲到</option>
+            </select>
+          </div>
+        </div>
+        <div class="flex gap-2 mt-5">
+          <button id="att-save-btn" onclick="saveAtt()" class="flex-1 btn-gold py-2 rounded-lg text-sm hover:opacity-90">儲存</button>
+          <button onclick="closeAttModal()" class="flex-1 bg-gray-100 text-gray-600 py-2 rounded-lg text-sm hover:bg-gray-200">取消</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Leaves -->
+    <div id="v-leaves" class="hidden p-6 fade">
+      <h2 class="text-xl font-bold mb-5">假單審核</h2>
+      <div class="flex gap-2 mb-4">
+        <button onclick="loadLeaves('pending')" id="lb-pending"
+          class="leaf-btn px-4 py-1.5 rounded-lg text-sm font-medium transition">待審核</button>
+        <button onclick="loadLeaves('approved')" id="lb-approved"
+          class="leaf-btn px-4 py-1.5 rounded-lg text-sm font-medium transition">已核准</button>
+        <button onclick="loadLeaves('rejected')" id="lb-rejected"
+          class="leaf-btn px-4 py-1.5 rounded-lg text-sm font-medium transition">已駁回</button>
+      </div>
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+        <div class="overflow-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="bg-gray-50 text-gray-400 text-xs">
+                <th class="px-4 py-2.5 text-left font-medium">申請日期</th>
+                <th class="px-4 py-2.5 text-left font-medium">姓名</th>
+                <th class="px-4 py-2.5 text-left font-medium">部門</th>
+                <th class="px-4 py-2.5 text-left font-medium">請假日期</th>
+                <th class="px-4 py-2.5 text-left font-medium">假別</th>
+                <th class="px-4 py-2.5 text-left font-medium">原因</th>
+                <th class="px-4 py-2.5 text-left font-medium">操作</th>
+              </tr>
+            </thead>
+            <tbody id="leaves-table"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Punch Requests -->
+    <div id="v-punchReqs" class="hidden p-6 fade">
+      <h2 class="text-xl font-bold mb-5">補打卡申請</h2>
+      <div class="flex gap-2 mb-4">
+        <button onclick="loadPunchReqs('pending')" id="pr-pending"
+          class="pr-btn px-4 py-1.5 rounded-lg text-sm font-medium transition">待審核</button>
+        <button onclick="loadPunchReqs('approved')" id="pr-approved"
+          class="pr-btn px-4 py-1.5 rounded-lg text-sm font-medium transition">已核准</button>
+        <button onclick="loadPunchReqs('rejected')" id="pr-rejected"
+          class="pr-btn px-4 py-1.5 rounded-lg text-sm font-medium transition">已駁回</button>
+      </div>
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+        <div class="overflow-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="bg-gray-50 text-gray-400 text-xs">
+                <th class="px-4 py-2.5 text-left font-medium">申請日期</th>
+                <th class="px-4 py-2.5 text-left font-medium">姓名</th>
+                <th class="px-4 py-2.5 text-left font-medium">部門</th>
+                <th class="px-4 py-2.5 text-left font-medium">類型</th>
+                <th class="px-4 py-2.5 text-left font-medium">補打日期</th>
+                <th class="px-4 py-2.5 text-left font-medium">申請時間</th>
+                <th class="px-4 py-2.5 text-left font-medium">原因</th>
+                <th class="px-4 py-2.5 text-left font-medium">操作</th>
+              </tr>
+            </thead>
+            <tbody id="pr-table"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Employees -->
+    <div id="v-employees" class="hidden p-6 fade">
+      <div class="flex items-center justify-between mb-5">
+        <h2 class="text-xl font-bold">員工管理</h2>
+        <button onclick="toggleAddForm()" class="btn-gold px-4 py-2 rounded-lg text-sm hover:opacity-90 transition">
+          + 新增員工
+        </button>
+      </div>
+
+      <!-- Add form -->
+      <div id="add-form" class="hidden bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-4 fade">
+        <h3 class="font-semibold text-sm mb-3">新增員工</h3>
+        <div class="grid grid-cols-2 gap-3 mb-3">
+          <input id="f-name" placeholder="姓名 *" class="border border-gray-200 rounded-lg px-3 py-2 text-sm">
+          <input id="f-lineid" placeholder="LINE User ID *" class="border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono text-xs">
+          <input id="f-dept" placeholder="部門（選填）" class="border border-gray-200 rounded-lg px-3 py-2 text-sm">
+          <select id="f-role" class="border border-gray-200 rounded-lg px-3 py-2 text-sm">
+            <option value="employee">員工</option>
+            <option value="admin">管理員</option>
+          </select>
+        </div>
+        <div class="flex gap-2">
+          <button onclick="addEmployee()" class="btn-gold px-4 py-2 rounded-lg text-sm hover:opacity-90">確認新增</button>
+          <button onclick="toggleAddForm()" class="bg-gray-100 text-gray-600 px-4 py-2 rounded-lg text-sm hover:bg-gray-200">取消</button>
+        </div>
+        <p class="text-xs text-gray-400 mt-3">💡 LINE User ID 可由員工在 LINE Bot 輸入「綁定 姓名」自動完成，或在此手動新增</p>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+        <div class="overflow-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="bg-gray-50 text-gray-400 text-xs">
+                <th class="px-4 py-2.5 text-left font-medium">姓名</th>
+                <th class="px-4 py-2.5 text-left font-medium">部門</th>
+                <th class="px-4 py-2.5 text-left font-medium">角色</th>
+                <th class="px-4 py-2.5 text-left font-medium">LINE ID</th>
+                <th class="px-4 py-2.5 text-left font-medium">加入日期</th>
+                <th class="px-4 py-2.5 text-left font-medium">操作</th>
+              </tr>
+            </thead>
+            <tbody id="emp-table"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Announcements -->
+    <div id="v-announcements" class="hidden p-6 fade">
+      <div class="flex items-center justify-between mb-5">
+        <div>
+          <h2 class="text-xl font-bold">公司公告</h2>
+          <p class="text-sm text-gray-400 mt-0.5">員工在 LINE 點「公司公告」可查看所有公告</p>
+        </div>
+        <button onclick="toggleAnnForm()"
+          class="btn-gold px-4 py-2 rounded-lg text-sm hover:opacity-90 transition">
+          + 新增公告
+        </button>
+      </div>
+
+      <!-- Add/Edit form -->
+      <div id="ann-form" class="hidden bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-4 fade">
+        <h3 class="font-semibold text-sm mb-3" id="ann-form-title">新增公告</h3>
+        <input type="hidden" id="ann-edit-id">
+        <div class="space-y-3">
+          <div>
+            <label class="text-xs text-gray-500 mb-1 block">標題 *</label>
+            <input id="ann-title" placeholder="公告標題"
+              class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400">
+          </div>
+          <div>
+            <label class="text-xs text-gray-500 mb-1 block">內容 *</label>
+            <textarea id="ann-content" rows="4" placeholder="公告內容..."
+              class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-yellow-400"></textarea>
+          </div>
+        </div>
+        <div class="flex gap-2 mt-4">
+          <button onclick="saveAnn()"
+            class="btn-gold px-4 py-2 rounded-lg text-sm hover:opacity-90">儲存</button>
+          <button onclick="toggleAnnForm()"
+            class="bg-gray-100 text-gray-600 px-4 py-2 rounded-lg text-sm hover:bg-gray-200">取消</button>
+        </div>
+      </div>
+
+      <div class="space-y-3" id="ann-list"></div>
+    </div>
+
+    <!-- Settings -->
+    <div id="v-settings" class="hidden p-6 fade">
+      <h2 class="text-xl font-bold mb-6">打卡設定</h2>
+
+      <!-- Geofence -->
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-4">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="font-semibold">📍 地理圍欄</h3>
+            <p class="text-xs text-gray-400 mt-0.5">限制員工必須在指定範圍內才能打卡</p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="fence-enabled" class="sr-only peer" onchange="toggleFence()">
+            <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-blue-600 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+          </label>
+        </div>
+
+        <div id="fence-config" class="space-y-4">
+          <div class="bg-yellow-50 rounded-xl p-4 text-sm text-blue-700">
+            💡 點下方「抓取我目前位置」自動填入辦公室座標，或手動輸入
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-xs text-gray-500 mb-1 block">辦公室緯度</label>
+              <input type="number" id="fence-lat" step="0.000001" placeholder="24.123456"
+                class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono">
+            </div>
+            <div>
+              <label class="text-xs text-gray-500 mb-1 block">辦公室經度</label>
+              <input type="number" id="fence-lng" step="0.000001" placeholder="120.654321"
+                class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono">
+            </div>
+          </div>
+          <div>
+            <label class="text-xs text-gray-500 mb-1 block">允許半徑（公尺）</label>
+            <div class="flex items-center gap-3">
+              <input type="range" id="fence-radius-range" min="50" max="1000" step="50" value="300"
+                class="flex-1" oninput="document.getElementById('fence-radius').value=this.value">
+              <input type="number" id="fence-radius" value="300" min="50" max="1000"
+                class="w-20 border border-gray-200 rounded-lg px-3 py-2 text-sm text-center"
+                oninput="document.getElementById('fence-radius-range').value=this.value">
+              <span class="text-sm text-gray-400">公尺</span>
+            </div>
+          </div>
+          <div class="flex items-center justify-between bg-gray-50 rounded-xl p-3">
+            <div>
+              <p class="text-sm font-medium">嚴格模式</p>
+              <p class="text-xs text-gray-400">開啟：超出範圍無法打卡 / 關閉：只警告但允許打卡</p>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer ml-4">
+              <input type="checkbox" id="fence-strict" class="sr-only peer">
+              <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-red-500 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+            </label>
+          </div>
+          <div class="flex gap-2">
+            <button onclick="getMyLocation()"
+              class="flex-1 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm hover:bg-gray-200 transition">
+              📍 抓取我目前位置
+            </button>
+            <button onclick="saveFence()"
+              class="flex-1 btn-gold px-4 py-2 rounded-lg text-sm hover:opacity-90 transition">
+              儲存設定
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- LIFF setup guide -->
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <h3 class="font-semibold mb-3">📱 LIFF 手機打卡設定</h3>
+        <div class="space-y-3 text-sm text-gray-600">
+          <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-amber-700 text-xs">
+            設定 LIFF 後，員工手機 GPS 會直接抓取，無法手動選位置
+          </div>
+          <p class="font-medium text-gray-700">LIFF ID：<span id="liff-id-display" class="font-mono text-yellow-700 ml-1">未設定</span></p>
+          <ol class="list-decimal list-inside space-y-1.5 text-xs text-gray-500">
+            <li>前往 LINE Developers Console → 你的 Channel → LIFF 分頁</li>
+            <li>點「Add」新增 LIFF App</li>
+            <li>Size 選「Full」，Endpoint URL 填：<br><code id="liff-endpoint" class="bg-gray-100 px-1.5 py-0.5 rounded text-xs break-all"></code></li>
+            <li>Scopes 勾選 profile、openid、geolocation</li>
+            <li>建立後複製 LIFF ID，填入伺服器 .env 的 LIFF_ID</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+
+    <!-- Annual Leave -->
+    <div id="v-annual" class="hidden p-6 fade">
+      <div class="flex items-center justify-between mb-5">
+        <div>
+          <h2 class="text-xl font-bold">特休管理</h2>
+          <p class="text-sm text-gray-400 mt-0.5">入職 7 天起，每增加一年 +1 天</p>
+        </div>
+        <div class="flex items-center gap-3">
+          <select id="annual-year" class="border border-gray-200 rounded-lg px-3 py-1.5 text-sm" onchange="loadAnnual()"></select>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+        <div class="overflow-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="bg-gray-50 text-gray-400 text-xs">
+                <th class="px-4 py-2.5 text-left font-medium">姓名</th>
+                <th class="px-4 py-2.5 text-left font-medium">部門</th>
+                <th class="px-4 py-2.5 text-left font-medium">入職日期</th>
+                <th class="px-4 py-2.5 text-left font-medium">年資</th>
+                <th class="px-4 py-2.5 text-center font-medium">配發特休</th>
+                <th class="px-4 py-2.5 text-center font-medium">已請</th>
+                <th class="px-4 py-2.5 text-center font-medium">剩餘</th>
+                <th class="px-4 py-2.5 text-left font-medium">操作</th>
+              </tr>
+            </thead>
+            <tbody id="annual-table"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Edit modal -->
+      <div id="annual-modal" class="hidden fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+        <div class="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm fade">
+          <h3 class="font-bold text-lg mb-4">編輯特休設定</h3>
+          <p class="text-sm text-gray-500 mb-4" id="modal-emp-name"></p>
+          <div class="space-y-3">
+            <div>
+              <label class="text-xs text-gray-500 mb-1 block">入職日期</label>
+              <input type="date" id="modal-join-date" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
+            </div>
+            <div>
+              <label class="text-xs text-gray-500 mb-1 block">手動覆蓋特休天數（留空則依年資自動計算）</label>
+              <input type="number" id="modal-override" placeholder="留空 = 自動計算" min="0"
+                class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
+            </div>
+          </div>
+          <div class="flex gap-2 mt-5">
+            <button onclick="saveAnnualEdit()" class="flex-1 btn-gold py-2 rounded-lg text-sm hover:opacity-90">儲存</button>
+            <button onclick="closeModal()" class="flex-1 bg-gray-100 text-gray-600 py-2 rounded-lg text-sm hover:bg-gray-200">取消</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── 薪資設定 ──────────────────────────────────── -->
+    <div id="v-payroll-settings" class="hidden p-6 fade">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl font-bold">薪資設定</h2>
+        <select id="ps-company-filter" onchange="loadPayrollSettings()" class="border border-gray-200 rounded-lg px-3 py-2 text-sm">
+          <option value="">所有公司</option>
+        </select>
+      </div>
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-auto">
+        <table class="w-full text-sm">
+          <thead><tr class="bg-gray-50 text-gray-400 text-xs">
+            <th class="px-4 py-2.5 text-left font-medium">姓名</th>
+            <th class="px-4 py-2.5 text-left font-medium">部門</th>
+            <th class="px-4 py-2.5 text-left font-medium">公司</th>
+            <th class="px-4 py-2.5 text-left font-medium">底薪</th>
+            <th class="px-4 py-2.5 text-left font-medium">職務加給</th>
+            <th class="px-4 py-2.5 text-left font-medium">投保級距</th>
+            <th class="px-4 py-2.5 text-left font-medium">眷屬</th>
+            <th class="px-4 py-2.5 text-left font-medium">操作</th>
+          </tr></thead>
+          <tbody id="ps-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── 加班申請 ──────────────────────────────────── -->
+    <div id="v-overtime" class="hidden p-6 fade">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl font-bold">加班申請</h2>
+        <div class="flex gap-2">
+          <select id="ot-status-filter" onchange="loadOvertime()" class="border border-gray-200 rounded-lg px-3 py-2 text-sm">
+            <option value="pending">待審核</option>
+            <option value="approved">已核准</option>
+            <option value="rejected">已駁回</option>
+            <option value="">全部</option>
+          </select>
+          <input type="month" id="ot-month-filter" onchange="loadOvertime()" class="border border-gray-200 rounded-lg px-3 py-2 text-sm">
+        </div>
+      </div>
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-auto">
+        <table class="w-full text-sm">
+          <thead><tr class="bg-gray-50 text-gray-400 text-xs">
+            <th class="px-4 py-2.5 text-left font-medium">姓名</th>
+            <th class="px-4 py-2.5 text-left font-medium">日期</th>
+            <th class="px-4 py-2.5 text-left font-medium">時段</th>
+            <th class="px-4 py-2.5 text-left font-medium">時數</th>
+            <th class="px-4 py-2.5 text-left font-medium">原因</th>
+            <th class="px-4 py-2.5 text-left font-medium">狀態</th>
+            <th class="px-4 py-2.5 text-left font-medium">操作</th>
+          </tr></thead>
+          <tbody id="ot-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── 月薪計算 ──────────────────────────────────── -->
+    <div id="v-payroll-calc" class="hidden p-6 fade">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl font-bold">月薪計算</h2>
+        <div class="flex gap-2 items-center">
+          <select id="pc-company" class="border border-gray-200 rounded-lg px-3 py-2 text-sm">
+            <option value="">選擇公司</option>
+          </select>
+          <input type="month" id="pc-month" class="border border-gray-200 rounded-lg px-3 py-2 text-sm">
+          <button onclick="generatePayroll()" class="btn-gold px-4 py-2 rounded-lg text-sm font-medium">⚙️ 生成薪資</button>
+          <button onclick="loadPayrollCalc()" class="border border-gray-200 px-3 py-2 rounded-lg text-sm hover:bg-gray-50">🔄</button>
+        </div>
+      </div>
+      <div id="pc-list"></div>
+    </div>
+
+    <!-- ── 公司設定 ──────────────────────────────────── -->
+    <div id="v-companies" class="hidden p-6 fade">
+      <h2 class="text-xl font-bold mb-4">公司設定</h2>
+      <div id="co-panel" class="space-y-4"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ── Config & State ────────────────────────────────────
+let token = localStorage.getItem('att_token');
+let currentLeafStatus = 'pending';
+let currentPrStatus = 'pending';
+let allEmployees = [];
+let editingLineId = null;
+let attRecords = [];
+let editingAttId = null;
+
+const LEAVE_LABELS = { annual: '特休假', sick: '病假', personal: '事假', other: '其他假別' };
+
+// ── Auth ──────────────────────────────────────────────
+async function login() {
+  const password = document.getElementById('loginPwd').value;
+  try {
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password })
+    });
+    if (!res.ok) { document.getElementById('loginErr').classList.remove('hidden'); return; }
+    const data = await res.json();
+    token = data.token;
+    localStorage.setItem('att_token', token);
+    showApp();
+  } catch (e) { document.getElementById('loginErr').classList.remove('hidden'); }
+}
+
+function logout() {
+  localStorage.removeItem('att_token');
+  location.reload();
+}
+
+function showApp() {
+  document.getElementById('loginScreen').style.display = 'none';
+  const app = document.getElementById('mainApp');
+  app.style.display = 'flex';
+  tab('dashboard');
+}
+
+// ── API helper ────────────────────────────────────────
+async function api(path, opts = {}) {
+  const res = await fetch('/api' + path, {
+    ...opts,
+    headers: { 'Content-Type': 'application/json', 'x-admin-token': token, ...opts.headers }
+  });
+  if (res.status === 401) { logout(); throw new Error('401'); }
+  // 防止非 JSON 回應（如 HTML 錯誤頁面）造成 parse 錯誤
+  const ct = res.headers.get('content-type') || '';
+  if (!ct.includes('application/json')) {
+    throw new Error(`HTTP ${res.status}`);
+  }
+  const data = await res.json();
+  if (!res.ok && !data.error) throw new Error(`HTTP ${res.status}`);
+  return data;
+}
+
+// ── Navigation ────────────────────────────────────────
+function tab(name) {
+  ['dashboard','attendance','leaves','punchReqs','announcements','employees','annual','settings','payroll-settings','overtime','payroll-calc','companies'].forEach(n => {
+    document.getElementById('v-' + n).classList.add('hidden');
+    const btn = document.getElementById('t-' + n);
+    if (!btn) return;
+    btn.className = 'nav-btn w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition';
+    btn.style.cssText = n === name
+      ? 'background:#C9A55A; color:#fff;'
+      : 'color:#aaa; background:transparent;';
+    if (n !== name) {
+      btn.onmouseenter = () => { btn.style.background = '#2a2a2a'; btn.style.color = '#fff'; };
+      btn.onmouseleave = () => { btn.style.background = 'transparent'; btn.style.color = '#aaa'; };
+    } else {
+      btn.onmouseenter = btn.onmouseleave = null;
+    }
+  });
+  document.getElementById('v-' + name).classList.remove('hidden');
+  if (name === 'dashboard') loadDashboard();
+  else if (name === 'attendance') initAtt();
+  else if (name === 'leaves') loadLeaves('pending');
+  else if (name === 'punchReqs') loadPunchReqs('pending');
+  else if (name === 'announcements') loadAnnouncements();
+  else if (name === 'employees') loadEmployees();
+  else if (name === 'annual') initAnnual();
+  else if (name === 'settings') initSettings();
+  else if (name === 'payroll-settings') initPayrollSettings();
+  else if (name === 'overtime') initOvertime();
+  else if (name === 'payroll-calc') initPayrollCalc();
+  else if (name === 'companies') initCompanies();
+}
+
+// ── Dashboard ─────────────────────────────────────────
+async function loadDashboard() {
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Taipei' });
+  document.getElementById('dash-date').textContent = today;
+
+  const stats = await api('/stats/today');
+  document.getElementById('s-total').textContent = stats.totalEmployees;
+  document.getElementById('s-in').textContent = stats.checkedIn;
+  document.getElementById('s-missing').textContent = stats.notCheckedIn;
+  document.getElementById('s-leaves').textContent = stats.pendingLeaves;
+
+  const [records, employees] = await Promise.all([
+    api('/attendance?date=' + today),
+    api('/employees')
+  ]);
+  allEmployees = employees;
+
+  const emps = employees.filter(e => e.role === 'employee').map(e => ({
+    ...e,
+    rec: records.find(r => r.lineId === e.lineId)
+  })).sort((a, b) => {
+    if (a.rec?.checkIn && !b.rec?.checkIn) return -1;
+    if (!a.rec?.checkIn && b.rec?.checkIn) return 1;
+    return (a.rec?.checkIn || 'z').localeCompare(b.rec?.checkIn || 'z');
+  });
+
+  const tbody = document.getElementById('dash-table');
+  if (!emps.length) {
+    tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-8 text-center text-gray-300 text-sm">尚無員工資料</td></tr>';
+    return;
+  }
+  tbody.innerHTML = emps.map(e => `
+    <tr class="border-t hover:bg-gray-50 transition">
+      <td class="px-4 py-2.5 font-medium">${e.name}</td>
+      <td class="px-4 py-2.5 text-gray-400 text-xs">${e.department}</td>
+      <td class="px-4 py-2.5">${e.rec?.checkIn ? `<span class="text-green-600 font-mono">${e.rec.checkIn}</span>` : '<span class="text-gray-200">--:--</span>'}</td>
+      <td class="px-4 py-2.5">${e.rec?.checkOut ? `<span class="text-yellow-700 font-mono">${e.rec.checkOut}</span>` : '<span class="text-gray-200">--:--</span>'}</td>
+      <td class="px-4 py-2.5">${badge(e.rec?.checkIn, e.rec?.status)}</td>
+    </tr>
+  `).join('');
+}
+
+// ── Attendance ────────────────────────────────────────
+async function initAtt() {
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Taipei' });
+  document.getElementById('att-month').value = today.slice(0, 7);
+  const employees = await api('/employees');
+  allEmployees = employees;
+  const sel = document.getElementById('att-emp');
+  sel.innerHTML = '<option value="">所有員工</option>' +
+    employees.filter(e => e.role === 'employee').map(e => `<option value="${e.lineId}">${e.name}</option>`).join('');
+  loadAtt();
+}
+
+async function loadAtt() {
+  const month = document.getElementById('att-month').value;
+  const lineId = document.getElementById('att-emp').value;
+  let url = '/attendance?month=' + month;
+  if (lineId) url += '&lineId=' + encodeURIComponent(lineId);
+  const records = await api(url);
+  attRecords = records;
+  const tbody = document.getElementById('att-table');
+  if (!records.length) {
+    tbody.innerHTML = '<tr><td colspan="8" class="px-4 py-8 text-center text-gray-300 text-sm">無出勤記錄</td></tr>';
+    return;
+  }
+  tbody.innerHTML = records.map(r => `
+    <tr class="border-t hover:bg-gray-50 transition">
+      <td class="px-4 py-2.5 font-mono text-xs">${r.date}</td>
+      <td class="px-4 py-2.5 font-medium">${r.employeeName}</td>
+      <td class="px-4 py-2.5 text-gray-400 text-xs">${r.department}</td>
+      <td class="px-4 py-2.5 text-green-600 font-mono text-xs">${r.checkIn || '--:--'}</td>
+      <td class="px-4 py-2.5 text-yellow-700 font-mono text-xs">${r.checkOut || '--:--'}</td>
+      <td class="px-4 py-2.5 text-gray-600">${r.workHours != null ? r.workHours + 'h' : '-'}</td>
+      <td class="px-4 py-2.5">${badge(r.checkIn, r.status)}</td>
+      <td class="px-4 py-2.5 whitespace-nowrap">
+        <button onclick="openAttModal('${r.id}')" class="text-yellow-700 text-xs hover:underline mr-2">編輯</button>
+        <button onclick="deleteAttRecord('${r.id}')" class="text-red-400 text-xs hover:text-red-600 hover:underline">刪除</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function openAttModal(id) {
+  editingAttId = id || null;
+  const modal = document.getElementById('att-modal');
+  const title = document.getElementById('att-modal-title');
+  const empSel = document.getElementById('att-edit-emp');
+
+  empSel.innerHTML = allEmployees.filter(e => e.role === 'employee')
+    .map(e => `<option value="${e.lineId}">${e.name}</option>`).join('');
+
+  if (id) {
+    title.textContent = '編輯出勤記錄';
+    const rec = attRecords.find(r => r.id === id);
+    if (rec) {
+      document.getElementById('att-edit-id').value = rec.id;
+      empSel.value = rec.lineId;
+      document.getElementById('att-edit-date').value = rec.date;
+      document.getElementById('att-edit-checkin').value = rec.checkIn || '';
+      document.getElementById('att-edit-checkout').value = rec.checkOut || '';
+      document.getElementById('att-edit-status').value = rec.status || 'normal';
+    }
+  } else {
+    title.textContent = '手動新增出勤記錄';
+    document.getElementById('att-edit-id').value = '';
+    document.getElementById('att-edit-date').value =
+      new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Taipei' });
+    document.getElementById('att-edit-checkin').value = '';
+    document.getElementById('att-edit-checkout').value = '';
+    document.getElementById('att-edit-status').value = 'normal';
+  }
+
+  modal.classList.remove('hidden');
+}
+
+function closeAttModal() {
+  document.getElementById('att-modal').classList.add('hidden');
+  editingAttId = null;
+}
+
+async function saveAtt() {
+  const id = document.getElementById('att-edit-id').value;
+  const lineId = document.getElementById('att-edit-emp').value;
+  const date = document.getElementById('att-edit-date').value;
+  const checkIn = document.getElementById('att-edit-checkin').value || null;
+  const checkOut = document.getElementById('att-edit-checkout').value || null;
+  const status = document.getElementById('att-edit-status').value;
+
+  if (!date) return alert('請選擇日期');
+  if (!id && !lineId) return alert('請選擇員工');
+
+  const saveBtn = document.getElementById('att-save-btn');
+  const origText = saveBtn?.textContent;
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = '儲存中...'; }
+
+  try {
+    let result;
+    if (id) {
+      result = await api('/attendance/' + id, {
+        method: 'PUT',
+        body: JSON.stringify({ checkIn, checkOut, status })
+      });
+    } else {
+      result = await api('/attendance', {
+        method: 'POST',
+        body: JSON.stringify({ lineId, date, checkIn, checkOut, status })
+      });
+    }
+    if (result && result.error) { alert('儲存失敗：' + result.error); return; }
+    closeAttModal();
+    loadAtt();
+  } catch(e) {
+    alert('儲存失敗：' + (e.message || '請確認伺服器是否正常運作'));
+  } finally {
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = origText; }
+  }
+}
+
+async function deleteAttRecord(id) {
+  if (!confirm('確定要刪除此出勤記錄？此操作不可復原。')) return;
+  await api('/attendance/' + id, { method: 'DELETE' });
+  loadAtt();
+}
+
+function exportCSV() {
+  const month = document.getElementById('att-month').value;
+  api('/attendance?month=' + month).then(records => {
+    const headers = ['日期', '姓名', '部門', '上班時間', '下班時間', '工時(小時)', '狀態'];
+    const statusMap = { normal: '正常', late: '遲到' };
+    const rows = records.map(r => [
+      r.date, r.employeeName, r.department,
+      r.checkIn || '', r.checkOut || '',
+      r.workHours || '', statusMap[r.status] || ''
+    ]);
+    const BOM = '﻿';
+    const csv = BOM + [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `出勤記錄_${month}.csv`;
+    a.click();
+  });
+}
+
+// ── Leaves ────────────────────────────────────────────
+async function loadLeaves(status) {
+  currentLeafStatus = status;
+  ['pending', 'approved', 'rejected'].forEach(s => {
+    document.getElementById('lb-' + s).className = 'leaf-btn px-4 py-1.5 rounded-lg text-sm font-medium transition ' +
+      (s === status ? 'btn-gold text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200');
+  });
+
+  const leaves = await api('/leaves?status=' + status);
+  const statusLabel = { pending: '待審核', approved: '已核准', rejected: '已駁回' };
+  const tbody = document.getElementById('leaves-table');
+
+  if (!leaves.length) {
+    tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-8 text-center text-gray-300 text-sm">無假單記錄</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = leaves.map(l => `
+    <tr class="border-t hover:bg-gray-50 transition">
+      <td class="px-4 py-2.5 text-xs text-gray-400 font-mono">${l.createdAt.slice(0, 10)}</td>
+      <td class="px-4 py-2.5 font-medium">${l.employeeName}</td>
+      <td class="px-4 py-2.5 text-gray-400 text-xs">${l.department}</td>
+      <td class="px-4 py-2.5 font-mono text-xs">${l.date}</td>
+      <td class="px-4 py-2.5">${LEAVE_LABELS[l.type] || l.type}</td>
+      <td class="px-4 py-2.5 text-gray-500 max-w-xs truncate text-xs">${l.reason}</td>
+      <td class="px-4 py-2.5">
+        ${status === 'pending' ? `
+          <button onclick="reviewLeave('${l.id}','approved')"
+            class="bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-lg text-xs hover:bg-emerald-100 mr-1 transition">核准</button>
+          <button onclick="reviewLeave('${l.id}','rejected')"
+            class="bg-red-50 text-red-600 px-2.5 py-1 rounded-lg text-xs hover:bg-red-100 transition">駁回</button>
+        ` : `<span class="text-xs ${l.status === 'approved' ? 'text-emerald-600' : 'text-red-500'}">${statusLabel[l.status]}</span>`}
+      </td>
+    </tr>
+  `).join('');
+}
+
+async function reviewLeave(id, status) {
+  await api('/leaves/' + id + '/review', {
+    method: 'PUT',
+    body: JSON.stringify({ status })
+  });
+  loadLeaves(currentLeafStatus);
+}
+
+// ── Employees ─────────────────────────────────────────
+async function loadEmployees() {
+  const employees = await api('/employees');
+  allEmployees = employees;
+  const roleLabel = { employee: '員工', admin: '管理員' };
+  const tbody = document.getElementById('emp-table');
+
+  if (!employees.length) {
+    tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-8 text-center text-gray-300 text-sm">尚無員工，請員工在 LINE Bot 輸入「綁定 姓名」完成綁定</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = employees.map(e => `
+    <tr class="border-t hover:bg-gray-50 transition">
+      <td class="px-4 py-2.5 font-medium">${e.name}</td>
+      <td class="px-4 py-2.5 text-gray-400 text-xs">${e.department}</td>
+      <td class="px-4 py-2.5">
+        <span class="px-2 py-0.5 rounded text-xs font-medium ${e.role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-500'}">
+          ${roleLabel[e.role] || e.role}
+        </span>
+      </td>
+      <td class="px-4 py-2.5 text-gray-300 text-xs font-mono">${e.lineId}</td>
+      <td class="px-4 py-2.5 text-gray-400 text-xs">${e.createdAt ? e.createdAt.slice(0, 10) : '-'}</td>
+      <td class="px-4 py-2.5 flex gap-3">
+        <button onclick="editEmp(this)" data-lineid="${e.lineId}" data-name="${e.name}" data-dept="${e.department}" data-role="${e.role}"
+          class="text-yellow-600 text-xs hover:text-yellow-700 hover:underline transition">編輯</button>
+        <button onclick="deleteEmp('${e.lineId}','${e.name}')"
+          class="text-red-400 text-xs hover:text-red-600 hover:underline transition">刪除</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function toggleAddForm() {
+  const form = document.getElementById('add-form');
+  form.classList.toggle('hidden');
+}
+
+async function addEmployee() {
+  const name = document.getElementById('f-name').value.trim();
+  const lineId = document.getElementById('f-lineid').value.trim();
+  const department = document.getElementById('f-dept').value.trim() || '未分部門';
+  const role = document.getElementById('f-role').value;
+  if (!name || !lineId) return alert('請填寫姓名和 LINE User ID');
+  await api('/employees', { method: 'POST', body: JSON.stringify({ name, lineId, department, role }) });
+  document.getElementById('add-form').classList.add('hidden');
+  ['f-name','f-lineid','f-dept'].forEach(id => document.getElementById(id).value = '');
+  loadEmployees();
+}
+
+async function deleteEmp(lineId, name) {
+  if (!confirm(`確定要刪除員工「${name}」？此操作不可復原。`)) return;
+  await api('/employees/' + encodeURIComponent(lineId), { method: 'DELETE' });
+  loadEmployees();
+}
+
+function editEmp(btn) {
+  document.getElementById('edit-emp-lineid').value = btn.dataset.lineid;
+  document.getElementById('edit-emp-name').value = btn.dataset.name;
+  document.getElementById('edit-emp-dept').value = btn.dataset.dept;
+  document.getElementById('edit-emp-role').value = btn.dataset.role;
+  document.getElementById('edit-emp-modal').classList.remove('hidden');
+}
+
+function closeEditEmp() {
+  document.getElementById('edit-emp-modal').classList.add('hidden');
+}
+
+async function saveEmpEdit() {
+  const lineId = document.getElementById('edit-emp-lineid').value;
+  const name = document.getElementById('edit-emp-name').value.trim();
+  const department = document.getElementById('edit-emp-dept').value.trim() || '未分部門';
+  const role = document.getElementById('edit-emp-role').value;
+  if (!name) return alert('請填寫姓名');
+  const btn = document.getElementById('edit-emp-save-btn');
+  btn.disabled = true; btn.textContent = '儲存中...';
+  try {
+    await api('/employees/' + encodeURIComponent(lineId), { method: 'PUT', body: JSON.stringify({ name, department, role }) });
+    closeEditEmp();
+    loadEmployees();
+  } catch(e) {
+    alert('儲存失敗：' + e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = '儲存';
+  }
+}
+
+// ── Helpers ───────────────────────────────────────────
+function badge(checkIn, status) {
+  if (!checkIn) return '<span class="px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-400">未打卡</span>';
+  if (status === 'late') return '<span class="px-2 py-0.5 rounded text-xs bg-amber-100 text-amber-700">遲到</span>';
+  return '<span class="px-2 py-0.5 rounded text-xs bg-emerald-100 text-emerald-700">正常</span>';
+}
+
+// ── Announcements ─────────────────────────────────────
+let editingAnnId = null;
+
+async function loadAnnouncements() {
+  const anns = await api('/announcements');
+  const list = document.getElementById('ann-list');
+
+  if (!anns.length) {
+    list.innerHTML = '<div class="bg-white rounded-xl p-8 text-center text-gray-300 text-sm shadow-sm border border-gray-100">尚無公告，點「+ 新增公告」建立第一則</div>';
+    return;
+  }
+
+  list.innerHTML = anns.map(a => `
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+      <div class="flex items-start justify-between gap-4">
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="font-semibold text-gray-800">${a.title}</span>
+            <span class="text-xs px-2 py-0.5 rounded-full ${a.active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400'}">
+              ${a.active ? '顯示中' : '已隱藏'}
+            </span>
+          </div>
+          <p class="text-sm text-gray-600 whitespace-pre-wrap leading-relaxed">${a.content}</p>
+          <p class="text-xs text-gray-300 mt-2">${a.createdAt.slice(0,10)} 建立</p>
+        </div>
+        <div class="flex flex-col gap-1.5 flex-shrink-0">
+          <button onclick="pushAnn('${a.id}')"
+            class="bg-yellow-50 text-yellow-700 px-3 py-1.5 rounded-lg text-xs hover:bg-yellow-100 transition whitespace-nowrap">
+            📤 推播
+          </button>
+          <button onclick="editAnn(${JSON.stringify(a).replace(/"/g, '&quot;')})"
+            class="bg-gray-50 text-gray-600 px-3 py-1.5 rounded-lg text-xs hover:bg-gray-100 transition">
+            編輯
+          </button>
+          <button onclick="deleteAnn('${a.id}','${a.title}')"
+            class="bg-red-50 text-red-500 px-3 py-1.5 rounded-lg text-xs hover:bg-red-100 transition">
+            刪除
+          </button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function toggleAnnForm(show) {
+  const form = document.getElementById('ann-form');
+  if (show === undefined) {
+    form.classList.toggle('hidden');
+  } else {
+    form.classList[show ? 'remove' : 'add']('hidden');
+  }
+  if (form.classList.contains('hidden')) {
+    editingAnnId = null;
+    document.getElementById('ann-edit-id').value = '';
+    document.getElementById('ann-title').value = '';
+    document.getElementById('ann-content').value = '';
+    document.getElementById('ann-form-title').textContent = '新增公告';
+  }
+}
+
+function editAnn(ann) {
+  editingAnnId = ann.id;
+  document.getElementById('ann-edit-id').value = ann.id;
+  document.getElementById('ann-title').value = ann.title;
+  document.getElementById('ann-content').value = ann.content;
+  document.getElementById('ann-form-title').textContent = '編輯公告';
+  toggleAnnForm(true);
+  document.getElementById('ann-form').scrollIntoView({ behavior: 'smooth' });
+}
+
+async function saveAnn() {
+  const id = document.getElementById('ann-edit-id').value;
+  const title = document.getElementById('ann-title').value.trim();
+  const content = document.getElementById('ann-content').value.trim();
+  if (!title || !content) return alert('請填寫標題與內容');
+
+  if (id) {
+    await api('/announcements/' + id, { method: 'PUT', body: JSON.stringify({ title, content }) });
+  } else {
+    await api('/announcements', { method: 'POST', body: JSON.stringify({ title, content }) });
+  }
+  toggleAnnForm(false);
+  loadAnnouncements();
+}
+
+async function deleteAnn(id, title) {
+  if (!confirm(`確定刪除公告「${title}」？`)) return;
+  await api('/announcements/' + id, { method: 'DELETE' });
+  loadAnnouncements();
+}
+
+async function pushAnn(id) {
+  if (!confirm('確定要推播這則公告給所有員工？')) return;
+  const r = await api('/announcements/' + id + '/push', { method: 'POST', body: JSON.stringify({}) });
+  alert(`✅ 已推播給 ${r.pushed} 位員工`);
+}
+
+// ── Punch Requests ────────────────────────────────────
+async function loadPunchReqs(status) {
+  currentPrStatus = status;
+  ['pending','approved','rejected'].forEach(s => {
+    document.getElementById('pr-' + s).className = 'pr-btn px-4 py-1.5 rounded-lg text-sm font-medium transition ' +
+      (s === status ? 'btn-gold text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200');
+  });
+
+  const reqs = await api('/punch-requests?status=' + status);
+  const tbody = document.getElementById('pr-table');
+  const typeLabel = { checkin: '補打上班卡', checkout: '補打下班卡' };
+  const statusLabel = { pending: '待審核', approved: '已核准', rejected: '已駁回' };
+
+  if (!reqs.length) {
+    tbody.innerHTML = '<tr><td colspan="8" class="px-4 py-8 text-center text-gray-300 text-sm">無補打卡申請</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = reqs.map(r => `
+    <tr class="border-t hover:bg-gray-50 transition">
+      <td class="px-4 py-2.5 text-xs text-gray-400 font-mono">${r.createdAt.slice(0, 10)}</td>
+      <td class="px-4 py-2.5 font-medium">${r.employeeName}</td>
+      <td class="px-4 py-2.5 text-gray-400 text-xs">${r.department}</td>
+      <td class="px-4 py-2.5">
+        <span class="px-2 py-0.5 rounded text-xs font-medium ${r.type === 'checkin' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-blue-700'}">
+          ${typeLabel[r.type] || r.type}
+        </span>
+      </td>
+      <td class="px-4 py-2.5 font-mono text-xs">${r.date}</td>
+      <td class="px-4 py-2.5 font-mono text-xs font-bold">${r.requestedTime}</td>
+      <td class="px-4 py-2.5 text-gray-500 max-w-xs truncate text-xs" title="${r.reason}">${r.reason}</td>
+      <td class="px-4 py-2.5">
+        ${status === 'pending' ? `
+          <button onclick="reviewPunchReq('${r.id}','approved')"
+            class="bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-lg text-xs hover:bg-emerald-100 mr-1 transition">核准</button>
+          <button onclick="reviewPunchReq('${r.id}','rejected')"
+            class="bg-red-50 text-red-600 px-2.5 py-1 rounded-lg text-xs hover:bg-red-100 transition">駁回</button>
+        ` : `<span class="text-xs ${r.status === 'approved' ? 'text-emerald-600' : 'text-red-500'}">${statusLabel[r.status]}</span>`}
+      </td>
+    </tr>
+  `).join('');
+}
+
+async function reviewPunchReq(id, status) {
+  await api('/punch-requests/' + id + '/review', {
+    method: 'PUT',
+    body: JSON.stringify({ status })
+  });
+  loadPunchReqs(currentPrStatus);
+}
+
+// ── Settings ──────────────────────────────────────────
+async function initSettings() {
+  // LIFF info
+  document.getElementById('liff-endpoint').textContent = location.origin + '/punch?action=checkin';
+
+  try {
+    const fence = await fetch('/api/settings/geofence').then(r => r.json());
+    document.getElementById('fence-enabled').checked = !!fence.enabled;
+    if (fence.lat) document.getElementById('fence-lat').value = fence.lat;
+    if (fence.lng) document.getElementById('fence-lng').value = fence.lng;
+    if (fence.radius) {
+      document.getElementById('fence-radius').value = fence.radius;
+      document.getElementById('fence-radius-range').value = fence.radius;
+    }
+    document.getElementById('fence-strict').checked = !!fence.strict;
+  } catch(e) {}
+
+  // Check LIFF ID
+  try {
+    const r = await fetch('/api/liff-id');
+    const d = await r.json();
+    if (d.liffId) document.getElementById('liff-id-display').textContent = d.liffId;
+  } catch(e) {}
+}
+
+function toggleFence() {
+  // visual only - saved on submit
+}
+
+function getMyLocation() {
+  navigator.geolocation.getCurrentPosition(pos => {
+    document.getElementById('fence-lat').value = pos.coords.latitude.toFixed(6);
+    document.getElementById('fence-lng').value = pos.coords.longitude.toFixed(6);
+    alert(`✅ 已取得位置\n緯度：${pos.coords.latitude.toFixed(6)}\n經度：${pos.coords.longitude.toFixed(6)}\n\n記得點「儲存設定」`);
+  }, () => alert('無法取得位置，請確認瀏覽器已允許位置權限'));
+}
+
+async function saveFence() {
+  const fence = {
+    enabled: document.getElementById('fence-enabled').checked,
+    lat: parseFloat(document.getElementById('fence-lat').value) || null,
+    lng: parseFloat(document.getElementById('fence-lng').value) || null,
+    radius: parseInt(document.getElementById('fence-radius').value) || 300,
+    strict: document.getElementById('fence-strict').checked
+  };
+  await api('/settings/geofence', { method: 'PUT', body: JSON.stringify(fence) });
+  alert('✅ 地理圍欄設定已儲存');
+}
+
+// ── Annual Leave ──────────────────────────────────────
+function initAnnual() {
+  const yearSel = document.getElementById('annual-year');
+  const thisYear = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Taipei' }).slice(0, 4);
+  if (!yearSel.value) {
+    yearSel.innerHTML = [thisYear, String(Number(thisYear) - 1), String(Number(thisYear) - 2)]
+      .map(y => `<option value="${y}">${y} 年</option>`).join('');
+  }
+  loadAnnual();
+}
+
+async function loadAnnual() {
+  const year = document.getElementById('annual-year').value ||
+    new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Taipei' }).slice(0, 4);
+  const data = await api('/leave-balance?year=' + year);
+  const tbody = document.getElementById('annual-table');
+
+  if (!data.length) {
+    tbody.innerHTML = '<tr><td colspan="8" class="px-4 py-8 text-center text-gray-300 text-sm">尚無員工資料</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = data.map(e => {
+    const joinLabel = e.joinDate || '<span class="text-gray-300">未設定</span>';
+    const yearsLabel = e.yearsOfService !== null
+      ? `${e.yearsOfService} 年` : '<span class="text-gray-300">-</span>';
+    const overrideTag = e.annualLeaveOverride !== null
+      ? '<span class="ml-1 text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">手動</span>' : '';
+    const pct = e.totalDays > 0 ? Math.round((e.usedDays / e.totalDays) * 100) : 0;
+    const barColor = pct >= 80 ? 'bg-red-400' : pct >= 50 ? 'bg-amber-400' : 'bg-emerald-400';
+
+    return `<tr class="border-t hover:bg-gray-50 transition">
+      <td class="px-4 py-3 font-medium">${e.name}</td>
+      <td class="px-4 py-3 text-gray-400 text-xs">${e.department}</td>
+      <td class="px-4 py-3 text-xs font-mono">${joinLabel}</td>
+      <td class="px-4 py-3 text-xs">${yearsLabel}</td>
+      <td class="px-4 py-3 text-center">
+        <span class="font-bold text-blue-700">${e.totalDays}</span> 天${overrideTag}
+      </td>
+      <td class="px-4 py-3 text-center">
+        <span class="font-bold text-amber-600">${e.usedDays}</span> 天
+      </td>
+      <td class="px-4 py-3 text-center">
+        <div class="flex items-center gap-2 justify-center">
+          <div class="w-16 bg-gray-100 rounded-full h-2">
+            <div class="${barColor} h-2 rounded-full transition-all" style="width:${Math.min(pct,100)}%"></div>
+          </div>
+          <span class="font-bold ${e.remainingDays === 0 ? 'text-red-500' : 'text-emerald-600'}">${e.remainingDays}</span>
+        </div>
+      </td>
+      <td class="px-4 py-3">
+        <button onclick="openModal('${e.lineId}','${e.name}','${e.joinDate || ''}','${e.annualLeaveOverride ?? ''}')"
+          class="text-yellow-700 text-xs hover:underline">編輯</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function openModal(lineId, name, joinDate, override) {
+  editingLineId = lineId;
+  document.getElementById('modal-emp-name').textContent = `員工：${name}`;
+  document.getElementById('modal-join-date').value = joinDate || '';
+  document.getElementById('modal-override').value = override || '';
+  document.getElementById('annual-modal').classList.remove('hidden');
+}
+
+function closeModal() {
+  document.getElementById('annual-modal').classList.add('hidden');
+  editingLineId = null;
+}
+
+async function saveAnnualEdit() {
+  const joinDate = document.getElementById('modal-join-date').value || null;
+  const overrideRaw = document.getElementById('modal-override').value.trim();
+  const annualLeaveOverride = overrideRaw === '' ? null : Number(overrideRaw);
+
+  await api('/employees/' + encodeURIComponent(editingLineId), {
+    method: 'PUT',
+    body: JSON.stringify({ joinDate, annualLeaveOverride })
+  });
+  closeModal();
+  loadAnnual();
+}
+
+// ── Payroll helpers ───────────────────────────────────
+let payrollCompanies = [];
+const LABOR_BRACKETS = [26400,27600,28800,30300,31800,33300,34800,36300,38200,40100,42000,43900,45800,48200,50600,53000,55400,57800,60800,63800,66800,69800,72800,76500,80300,84000,87600,92100,96600,101100,105600,110100,115500,120900,126300,131700,137100,142500,147900,150000,182000];
+
+async function payrollApi(path, opts = {}) {
+  const res = await fetch('/api/payroll' + path, {
+    ...opts,
+    headers: { 'Content-Type': 'application/json', 'x-admin-token': token, ...opts.headers }
+  });
+  if (res.status === 401) { logout(); throw new Error('401'); }
+  return res.json();
+}
+
+async function loadPayrollCompanies() {
+  payrollCompanies = await payrollApi('/companies');
+  ['ps-company-filter','pc-company','sf-company-id'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const placeholder = id === 'ps-company-filter' ? '<option value="">所有公司</option>' : '<option value="">選擇公司</option>';
+    el.innerHTML = placeholder + payrollCompanies.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+  });
+  const bracketSel = document.getElementById('sf-insurance-bracket');
+  if (bracketSel) bracketSel.innerHTML = LABOR_BRACKETS.map(b => `<option value="${b}">${b.toLocaleString()}</option>`).join('');
+}
+
+// ── 薪資設定 ──────────────────────────────────────────
+async function initPayrollSettings() {
+  await loadPayrollCompanies();
+  const now = new Date().toISOString().slice(0,7);
+  document.getElementById('ot-month-filter').value = now;
+  document.getElementById('pc-month').value = now;
+  loadPayrollSettings();
+}
+
+async function loadPayrollSettings() {
+  const filter = document.getElementById('ps-company-filter').value;
+  const data = await payrollApi('/salary-settings');
+  const tbody = document.getElementById('ps-tbody');
+  const rows = (filter ? data.filter(e => (e.salarySettings.companyId||'') === filter) : data);
+  if (!rows.length) { tbody.innerHTML = '<tr><td colspan="8" class="text-center py-8 text-gray-400">尚無員工資料</td></tr>'; return; }
+  tbody.innerHTML = rows.map(e => {
+    const s = e.salarySettings || {};
+    const co = payrollCompanies.find(c => c.id === s.companyId);
+    const coColor = s.companyId === 'jiamao' ? 'bg-blue-100 text-blue-700' : s.companyId === 'shengxing' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-500';
+    return `<tr class="border-b border-gray-50 hover:bg-gray-50">
+      <td class="px-4 py-3 font-medium">${e.name}</td>
+      <td class="px-4 py-3 text-gray-500">${e.department||'-'}</td>
+      <td class="px-4 py-3"><span class="px-2 py-0.5 rounded text-xs font-semibold ${coColor}">${co?.name||'未設定'}</span></td>
+      <td class="px-4 py-3 font-mono">${s.baseSalary ? '$'+Number(s.baseSalary).toLocaleString() : '<span class="text-gray-300">未設定</span>'}</td>
+      <td class="px-4 py-3 font-mono">${s.jobAllowance ? '$'+Number(s.jobAllowance).toLocaleString() : '-'}</td>
+      <td class="px-4 py-3 font-mono">${s.insuranceBracket ? Number(s.insuranceBracket).toLocaleString() : '-'}</td>
+      <td class="px-4 py-3">${s.dependentCount||0}</td>
+      <td class="px-4 py-3"><button class="text-xs px-3 py-1.5 border border-gray-200 rounded-lg hover:bg-gray-50" onclick="openSalaryModal('${e.lineId}','${e.name}')">✏️ 編輯</button></td>
+    </tr>`;
+  }).join('');
+}
+
+let editingSalaryLineId = '';
+async function openSalaryModal(lineId, name) {
+  editingSalaryLineId = lineId;
+  document.getElementById('sf-emp-name').textContent = name;
+  const s = await payrollApi('/salary-settings/' + lineId);
+  const fields = ['companyId','baseSalary','jobAllowance','perfectAttendance','transportAllowance','phoneAllowance','businessTripFuel','quarterBonus','performanceBonus','supportAllowance','driverAllowance','skillAllowance','holidayGift','otherAllowance','dependentCount'];
+  fields.forEach(f => {
+    const el = document.getElementById('sf-' + f.replace(/([A-Z])/g, '-$1').toLowerCase());
+    if (el) el.value = s[f] !== undefined ? s[f] : (f === 'companyId' ? '' : 0);
+  });
+  const bsel = document.getElementById('sf-insurance-bracket');
+  if (bsel && s.insuranceBracket) bsel.value = s.insuranceBracket;
+  document.getElementById('salary-modal').classList.remove('hidden');
+}
+
+async function saveSalarySettings() {
+  const fields = ['companyId','baseSalary','jobAllowance','perfectAttendance','transportAllowance','phoneAllowance','businessTripFuel','quarterBonus','performanceBonus','supportAllowance','driverAllowance','skillAllowance','holidayGift','otherAllowance','dependentCount','insuranceBracket'];
+  const data = {};
+  fields.forEach(f => {
+    const el = document.getElementById('sf-' + f.replace(/([A-Z])/g, '-$1').toLowerCase());
+    if (!el) return;
+    data[f] = f === 'companyId' ? el.value : Number(el.value)||0;
+  });
+  await payrollApi('/salary-settings/' + editingSalaryLineId, { method:'PUT', body: JSON.stringify(data) });
+  document.getElementById('salary-modal').classList.add('hidden');
+  loadPayrollSettings();
+  alert('✅ 薪資設定已儲存');
+}
+
+// ── 加班申請 ──────────────────────────────────────────
+async function initOvertime() {
+  if (!payrollCompanies.length) await loadPayrollCompanies();
+  if (!document.getElementById('ot-month-filter').value) {
+    document.getElementById('ot-month-filter').value = new Date().toISOString().slice(0,7);
+  }
+  loadOvertime();
+}
+
+async function loadOvertime() {
+  const status = document.getElementById('ot-status-filter').value;
+  const month = document.getElementById('ot-month-filter').value;
+  const params = new URLSearchParams();
+  if (status) params.set('status', status);
+  if (month) params.set('month', month);
+  const data = await payrollApi('/overtime-requests?' + params);
+  const tbody = document.getElementById('ot-tbody');
+  if (!data.length) { tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8 text-gray-400">沒有加班申請</td></tr>'; return; }
+  tbody.innerHTML = data.map(r => {
+    const badgeClass = r.status==='pending' ? 'bg-amber-100 text-amber-700' : r.status==='approved' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700';
+    const statusTxt = r.status==='pending'?'待審核':r.status==='approved'?'已核准':'已駁回';
+    return `<tr class="border-b border-gray-50 hover:bg-gray-50">
+      <td class="px-4 py-3 font-medium">${r.employeeName}</td>
+      <td class="px-4 py-3">${r.date}</td>
+      <td class="px-4 py-3">${r.startTime}～${r.endTime}</td>
+      <td class="px-4 py-3 font-semibold">${r.hours}H</td>
+      <td class="px-4 py-3 text-gray-500 max-w-xs truncate" title="${r.reason}">${r.reason}</td>
+      <td class="px-4 py-3"><span class="px-2 py-0.5 rounded text-xs font-semibold ${badgeClass}">${statusTxt}</span></td>
+      <td class="px-4 py-3">${r.status==='pending' ? `<button class="text-xs px-3 py-1.5 btn-gold rounded-lg" onclick='openOTReview(${JSON.stringify(r)})'>審核</button>` : (r.reviewNote||'-')}</td>
+    </tr>`;
+  }).join('');
+}
+
+let reviewingOTId = '';
+function openOTReview(r) {
+  reviewingOTId = r.id;
+  document.getElementById('ot-modal-content').innerHTML = `<b>${r.employeeName}</b> 申請加班<br>日期：${r.date}<br>時段：${r.startTime}～${r.endTime}（${r.hours}H）<br>原因：${r.reason}`;
+  document.getElementById('ot-note').value = '';
+  document.getElementById('ot-modal').classList.remove('hidden');
+}
+
+async function reviewOT(status) {
+  const note = document.getElementById('ot-note').value;
+  await payrollApi('/overtime-requests/' + reviewingOTId + '/review', { method:'PUT', body: JSON.stringify({status, note}) });
+  document.getElementById('ot-modal').classList.add('hidden');
+  loadOvertime();
+}
+
+// ── 月薪計算 ──────────────────────────────────────────
+async function initPayrollCalc() {
+  if (!payrollCompanies.length) await loadPayrollCompanies();
+  if (!document.getElementById('pc-month').value) {
+    document.getElementById('pc-month').value = new Date().toISOString().slice(0,7);
+  }
+  loadPayrollCalc();
+}
+
+async function generatePayroll() {
+  const companyId = document.getElementById('pc-company').value;
+  const monthVal = document.getElementById('pc-month').value;
+  if (!companyId) { alert('請選擇公司'); return; }
+  if (!monthVal) { alert('請選擇月份'); return; }
+  const [year, month] = monthVal.split('-');
+  const coName = payrollCompanies.find(c=>c.id===companyId)?.name || companyId;
+  if (!confirm(`確定要為「${coName}」生成 ${year}年${month}月 薪資？\n（已有薪資單將被覆蓋重算）`)) return;
+  const r = await payrollApi('/generate', { method:'POST', body: JSON.stringify({year:Number(year),month:Number(month),companyId}) });
+  if (r.error) { alert('錯誤：' + r.error); return; }
+  alert(`✅ 已生成 ${r.length} 筆薪資草稿`);
+  loadPayrollCalc();
+}
+
+async function loadPayrollCalc() {
+  const companyId = document.getElementById('pc-company').value;
+  const monthVal = document.getElementById('pc-month').value;
+  const params = new URLSearchParams();
+  if (companyId) params.set('companyId', companyId);
+  if (monthVal) { const [y,m]=monthVal.split('-'); params.set('year',y); params.set('month',m); }
+  const data = await payrollApi('/payrolls?' + params);
+  const el = document.getElementById('pc-list');
+  if (!data.length) { el.innerHTML = '<div class="text-center py-12 text-gray-400">尚無薪資資料，請先設定員工薪資後點擊「生成薪資」</div>'; return; }
+
+  const groups = {};
+  data.forEach(p => {
+    const key = `${p.year}-${String(p.month).padStart(2,'0')}-${p.companyId}`;
+    if (!groups[key]) groups[key] = { year:p.year, month:p.month, companyId:p.companyId, payrolls:[] };
+    groups[key].payrolls.push(p);
+  });
+
+  el.innerHTML = Object.values(groups).map(g => {
+    const co = payrollCompanies.find(c=>c.id===g.companyId);
+    const totalNet = g.payrolls.reduce((s,p)=>s+(p.netSalary||0),0);
+    const rows = g.payrolls.map(p => {
+      const badgeClass = p.status==='confirmed' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700';
+      const statusTxt = p.status==='confirmed'?'已確認':'草稿';
+      return `<tr class="border-b border-gray-50 hover:bg-gray-50">
+        <td class="px-4 py-3 font-medium">${p.employeeName}</td>
+        <td class="px-4 py-3 text-gray-500">${p.department||'-'}</td>
+        <td class="px-4 py-3 font-mono">\$${(p.totalIncome||0).toLocaleString()}</td>
+        <td class="px-4 py-3 font-mono text-red-500">-\$${(p.totalDeductions||0).toLocaleString()}</td>
+        <td class="px-4 py-3 font-mono font-bold text-blue-600">\$${(p.netSalary||0).toLocaleString()}</td>
+        <td class="px-4 py-3 text-gray-500">${p.summary?.attendanceDays||0}天 / ${p.summary?.totalOTHours||0}H加班</td>
+        <td class="px-4 py-3"><span class="px-2 py-0.5 rounded text-xs font-semibold ${badgeClass}">${statusTxt}</span></td>
+        <td class="px-4 py-3"><button class="text-xs px-3 py-1.5 border border-gray-200 rounded-lg hover:bg-gray-50" onclick="openSlipModal('${p.id}')">📄 詳情</button></td>
+      </tr>`;
+    }).join('');
+    return `<div class="bg-white rounded-xl shadow-sm border border-gray-100 mb-4 overflow-auto">
+      <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+        <h3 class="font-semibold text-sm">${g.year}年${g.month}月　${co?.name||g.companyId}</h3>
+        <span class="text-sm text-gray-500">本月薪資支出合計：<b class="text-blue-600">\$${totalNet.toLocaleString()}</b></span>
+      </div>
+      <table class="w-full text-sm">
+        <thead><tr class="bg-gray-50 text-gray-400 text-xs">
+          <th class="px-4 py-2.5 text-left font-medium">姓名</th><th class="px-4 py-2.5 text-left font-medium">部門</th>
+          <th class="px-4 py-2.5 text-left font-medium">應付合計</th><th class="px-4 py-2.5 text-left font-medium">應扣合計</th>
+          <th class="px-4 py-2.5 text-left font-medium">實領薪資</th><th class="px-4 py-2.5 text-left font-medium">出勤/加班</th>
+          <th class="px-4 py-2.5 text-left font-medium">狀態</th><th class="px-4 py-2.5 text-left font-medium">操作</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+  }).join('');
+}
+
+let currentSlipId = '';
+async function openSlipModal(id) {
+  currentSlipId = id;
+  const p = await payrollApi('/payrolls/' + id);
+  const co = payrollCompanies.find(c=>c.id===p.companyId);
+  document.getElementById('slip-title').textContent = `${p.year}年${p.month}月 薪資單 — ${p.employeeName}`;
+  document.getElementById('slip-confirm-btn').style.display = p.status==='confirmed' ? 'none' : '';
+
+  const inc = p.income||{}, ded = p.deductions||{};
+  const incItems = [
+    ['底薪', inc.baseSalary],['職務加給', inc.jobAllowance],['全勤獎金', inc.perfectAttendance],
+    ['伙食津貼', inc.mealAllowance],['加班伙食津貼', inc.overtimeMealAllowance],['加班費', inc.overtimePay],
+    ['交通費', inc.transportAllowance],['電話費', inc.phoneAllowance],
+    ['出差油資', inc.businessTripFuel],['季獎金', inc.quarterBonus],
+    ['績效獎金', inc.performanceBonus],['支援其他部門津貼', inc.supportAllowance],
+    ['駕駛津貼', inc.driverAllowance],['技能津貼', inc.skillAllowance],
+    ['節日禮金', inc.holidayGift],['其他津貼', inc.otherAllowance],
+  ].filter(([,v])=>v);
+  const dedItems = [
+    ['勞保費', ded.laborInsurance],['健保費', ded.healthInsurance],
+    ['遲到扣款', ded.lateDeduction],['假別扣款', ded.leaveDeduction],
+  ];
+
+  document.getElementById('slip-body').innerHTML = `
+    <div class="text-xs text-gray-400 mb-3">公司：${co?.name||'-'}　出勤${p.summary?.attendanceDays||0}天　加班${p.summary?.totalOTHours||0}H　遲到${p.summary?.totalLateMinutes||0}分　投保${(p.summary?.insuranceBracket||0).toLocaleString()}</div>
+    <div class="grid grid-cols-2 gap-4 mb-4">
+      <div>
+        <div class="text-xs font-bold text-gray-400 uppercase mb-2 pb-1 border-b">應付薪資項目</div>
+        ${incItems.map(([l,v])=>`<div class="flex justify-between py-1 text-sm border-b border-gray-50"><span>${l}</span><span class="font-mono">\$${Number(v||0).toLocaleString()}</span></div>`).join('')}
+        <div class="flex justify-between py-1.5 text-sm font-bold border-t mt-1"><span>應付合計</span><span class="font-mono">\$${(p.totalIncome||0).toLocaleString()}</span></div>
+      </div>
+      <div>
+        <div class="text-xs font-bold text-gray-400 uppercase mb-2 pb-1 border-b">應扣薪資項目</div>
+        ${dedItems.map(([l,v])=>`<div class="flex justify-between py-1 text-sm border-b border-gray-50"><span>${l}</span><span class="font-mono">\$${Number(v||0).toLocaleString()}</span></div>`).join('')}
+        <div class="flex justify-between py-1.5 text-sm font-bold border-t mt-1 text-red-500"><span>應扣合計</span><span class="font-mono">\$${(p.totalDeductions||0).toLocaleString()}</span></div>
+      </div>
+    </div>
+    <div class="flex justify-between items-center bg-blue-50 rounded-xl px-4 py-3 text-blue-700 font-bold text-base mb-3">
+      <span>✅ 實領薪資</span><span class="font-mono">\$${(p.netSalary||0).toLocaleString()}</span>
+    </div>
+    <div>
+      <label class="text-xs text-gray-400 mb-1 block">備注</label>
+      <input type="text" id="slip-notes" value="${p.notes||''}" placeholder="備注..." class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
+    </div>
+    <div class="text-xs text-gray-300 mt-2">勞保費率：11.5%×20%　健保費率：5.17%×30%×(1+眷屬)</div>
+  `;
+  preparePrintArea(p, co);
+  document.getElementById('slip-modal').classList.remove('hidden');
+}
+
+async function confirmPayroll() {
+  if (!confirm('確認薪資並標記為已發放？')) return;
+  const notes = document.getElementById('slip-notes')?.value||'';
+  await payrollApi('/payrolls/' + currentSlipId, { method:'PUT', body: JSON.stringify({notes}) });
+  await payrollApi('/payrolls/' + currentSlipId + '/confirm', { method:'POST' });
+  document.getElementById('slip-modal').classList.add('hidden');
+  alert('✅ 薪資已確認');
+  loadPayrollCalc();
+}
+
+async function notifyEmployee() {
+  const notes = document.getElementById('slip-notes')?.value||'';
+  await payrollApi('/payrolls/' + currentSlipId, { method:'PUT', body: JSON.stringify({notes}) });
+  const r = await payrollApi('/payrolls/' + currentSlipId + '/notify', { method:'POST' });
+  if (r.error) alert('推播失敗：' + r.error);
+  else alert('✅ 薪資通知已推播給員工');
+}
+
+function preparePrintArea(p, co) {
+  const inc = p.income||{}, ded = p.deductions||{};
+  const allInc = [['薪資',inc.baseSalary],['職務加給',inc.jobAllowance],['全勤',inc.perfectAttendance],['伙食津貼(80元/餐)',inc.mealAllowance],['加班伙食津貼',inc.overtimeMealAllowance],['加班費(H×1.34/H×1.67)',inc.overtimePay],['其他津貼:交通費',inc.transportAllowance],['其他津貼:電話費',inc.phoneAllowance],['其他津貼:出差油資',inc.businessTripFuel],['季獎金',inc.quarterBonus],['績效獎金',inc.performanceBonus],['其他津貼:支援其他部門',inc.supportAllowance],['其他津貼:駕駛津貼',inc.driverAllowance],['其他技能津貼',inc.skillAllowance],['節日禮金',inc.holidayGift],['其他津貼',inc.otherAllowance]];
+  const allDed = [['勞保費用',ded.laborInsurance],['健保費用',ded.healthInsurance],['遲到扣款',ded.lateDeduction],['假別扣款',ded.leaveDeduction]];
+  const maxRows = Math.max(allInc.length, allDed.length);
+  let rows = '';
+  for (let i=0;i<maxRows;i++){
+    const [il,iv]=allInc[i]||['',''];const [dl,dv]=allDed[i]||['',''];
+    rows+=`<tr><td style="border:1px solid #999;padding:4px 6px;font-size:11px">${il}</td><td style="border:1px solid #999;padding:4px 6px;font-size:11px;text-align:right">${iv?'$'+Number(iv).toLocaleString():''}</td><td style="border:1px solid #999;padding:4px 6px;font-size:11px">${dl}</td><td style="border:1px solid #999;padding:4px 6px;font-size:11px;text-align:right">${dv!==undefined&&dv!==''?'$'+Number(dv).toLocaleString():''}</td></tr>`;
+  }
+  document.getElementById('print-area').innerHTML = `<div style="font-family:'Noto Sans TC',sans-serif;padding:20px;font-size:12px"><div style="text-align:center;font-size:16px;font-weight:700;margin-bottom:4px">${co?.name||''}</div><div style="text-align:center;font-size:13px;color:#555;margin-bottom:12px">${p.year}年 ${p.month}月　薪資單</div><div style="display:flex;gap:40px;margin-bottom:8px;font-size:12px"><span>員工姓名：${p.employeeName}</span><span>部門：${p.department||'-'}</span><span>出勤日數：${p.summary?.attendanceDays||0}</span><span>加班時數：${p.summary?.totalOTHours||0}</span></div><table style="width:100%;border-collapse:collapse"><thead><tr><th style="border:1px solid #999;padding:4px 6px;font-size:11px;background:#f5f5f5">應付薪資項目</th><th style="border:1px solid #999;padding:4px 6px;font-size:11px;background:#f5f5f5">金額</th><th style="border:1px solid #999;padding:4px 6px;font-size:11px;background:#f5f5f5">應扣薪資項目</th><th style="border:1px solid #999;padding:4px 6px;font-size:11px;background:#f5f5f5">金額</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td colspan="2" style="border:1px solid #999;padding:4px 6px;font-size:11px;font-weight:700">應付合計：$${(p.totalIncome||0).toLocaleString()}</td><td colspan="2" style="border:1px solid #999;padding:4px 6px;font-size:11px;font-weight:700">應扣合計：$${(p.totalDeductions||0).toLocaleString()}</td></tr><tr><td colspan="2" style="border:1px solid #999;padding:6px;font-size:13px;font-weight:700">實領薪資：$${(p.netSalary||0).toLocaleString()}</td><td colspan="2" style="border:1px solid #999;padding:6px;font-size:11px">${p.notes?'備注：'+p.notes:''}</td></tr></tfoot></table><div style="margin-top:8px;font-size:10px;color:#888;border-top:1px solid #ccc;padding-top:6px">*遲到以月薪÷240換算時薪×分鐘數扣除　*病假有醫療證明扣半薪，無證明以事假論</div></div>`;
+}
+
+function printSlip() { window.print(); }
+
+// ── 公司設定 ──────────────────────────────────────────
+async function initCompanies() {
+  if (!payrollCompanies.length) await loadPayrollCompanies();
+  renderCompanies();
+}
+
+function renderCompanies() {
+  document.getElementById('co-panel').innerHTML = payrollCompanies.map(c => `
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+      <h3 class="font-semibold mb-3">${c.name}</h3>
+      <div class="grid grid-cols-3 gap-4 mb-4" style="max-width:480px">
+        <div>
+          <label class="text-xs text-gray-400 mb-1 block">上班時間</label>
+          <input type="text" id="co-${c.id}-start" value="${c.workStart||'08:00'}" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder="08:00">
+        </div>
+        <div>
+          <label class="text-xs text-gray-400 mb-1 block">下班時間</label>
+          <input type="text" id="co-${c.id}-end" value="${c.workEnd||'17:00'}" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder="17:00">
+        </div>
+        <div>
+          <label class="text-xs text-gray-400 mb-1 block">加班起算</label>
+          <input type="text" id="co-${c.id}-ot" value="${c.overtimeStart||'17:30'}" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder="17:30">
+        </div>
+      </div>
+      <button onclick="saveCompany('${c.id}')" class="btn-gold px-4 py-2 rounded-lg text-sm font-medium">儲存</button>
+    </div>
+  `).join('');
+}
+
+async function saveCompany(id) {
+  const workStart = document.getElementById(`co-${id}-start`).value;
+  const workEnd = document.getElementById(`co-${id}-end`).value;
+  const overtimeStart = document.getElementById(`co-${id}-ot`).value;
+  await payrollApi('/companies/' + id, { method:'PUT', body: JSON.stringify({workStart,workEnd,overtimeStart}) });
+  payrollCompanies = await payrollApi('/companies');
+  alert('✅ 已儲存');
+}
+
+// ── Init ──────────────────────────────────────────────
+if (token) {
+  showApp();
+}
+</script>
+
+<!-- 編輯員工 Modal -->
+<div id="edit-emp-modal" class="hidden fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+  <div class="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4">
+    <h3 class="font-bold text-lg mb-4">編輯員工</h3>
+    <input type="hidden" id="edit-emp-lineid">
+    <div class="space-y-3">
+      <div>
+        <label class="text-xs text-gray-500 mb-1 block">姓名</label>
+        <input id="edit-emp-name" type="text" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400">
+      </div>
+      <div>
+        <label class="text-xs text-gray-500 mb-1 block">部門</label>
+        <input id="edit-emp-dept" type="text" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400">
+      </div>
+      <div>
+        <label class="text-xs text-gray-500 mb-1 block">角色</label>
+        <select id="edit-emp-role" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400">
+          <option value="employee">員工</option>
+          <option value="admin">管理員</option>
+        </select>
+      </div>
+    </div>
+    <div class="flex gap-2 mt-5">
+      <button id="edit-emp-save-btn" onclick="saveEmpEdit()"
+        class="flex-1 btn-gold rounded-lg py-2 text-sm font-medium hover:opacity-90 transition">儲存</button>
+      <button onclick="closeEditEmp()"
+        class="flex-1 border rounded-lg py-2 text-sm text-gray-500 hover:bg-gray-50 transition">取消</button>
+    </div>
+  </div>
+</div>
+<!-- 薪資設定 Modal -->
+<div id="salary-modal" class="hidden fixed inset-0 bg-black/40 flex items-center justify-center z-50 overflow-y-auto py-6">
+  <div class="bg-white rounded-2xl shadow-xl p-6 w-full max-w-2xl mx-4">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-bold text-lg">薪資設定</h3>
+      <button onclick="document.getElementById('salary-modal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
+    </div>
+    <p class="text-sm text-gray-500 mb-4" id="sf-emp-name"></p>
+    <div class="grid grid-cols-2 gap-3">
+      <div><label class="text-xs text-gray-400 mb-1 block">公司</label><select id="sf-company-id" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></select></div>
+      <div><label class="text-xs text-gray-400 mb-1 block">底薪（月薪）</label><input type="number" id="sf-base-salary" min="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
+      <div><label class="text-xs text-gray-400 mb-1 block">職務加給</label><input type="number" id="sf-job-allowance" min="0" value="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
+      <div><label class="text-xs text-gray-400 mb-1 block">全勤獎金（佳懋）</label><input type="number" id="sf-perfect-attendance" min="0" value="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
+      <div><label class="text-xs text-gray-400 mb-1 block">交通費（佳懋）</label><input type="number" id="sf-transport-allowance" min="0" value="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
+      <div><label class="text-xs text-gray-400 mb-1 block">電話費（佳懋）</label><input type="number" id="sf-phone-allowance" min="0" value="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
+      <div><label class="text-xs text-gray-400 mb-1 block">出差油資（佳懋設計部）</label><input type="number" id="sf-business-trip-fuel" min="0" value="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
+      <div><label class="text-xs text-gray-400 mb-1 block">季獎金（佳懋設計部）</label><input type="number" id="sf-quarter-bonus" min="0" value="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
+      <div><label class="text-xs text-gray-400 mb-1 block">績效獎金（晟涬）</label><input type="number" id="sf-performance-bonus" min="0" value="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
+      <div><label class="text-xs text-gray-400 mb-1 block">支援其他部門津貼（晟涬）</label><input type="number" id="sf-support-allowance" min="0" value="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
+      <div><label class="text-xs text-gray-400 mb-1 block">駕駛津貼（晟涬）</label><input type="number" id="sf-driver-allowance" min="0" value="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
+      <div><label class="text-xs text-gray-400 mb-1 block">技能津貼-天車（晟涬）</label><input type="number" id="sf-skill-allowance" min="0" value="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
+      <div><label class="text-xs text-gray-400 mb-1 block">節日禮金</label><input type="number" id="sf-holiday-gift" min="0" value="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
+      <div><label class="text-xs text-gray-400 mb-1 block">其他津貼</label><input type="number" id="sf-other-allowance" min="0" value="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
+    </div>
+    <div class="mt-4 pt-3 border-t border-gray-100">
+      <p class="text-xs font-semibold text-gray-400 uppercase mb-3">勞健保設定</p>
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="text-xs text-gray-400 mb-1 block">投保薪資級距</label><select id="sf-insurance-bracket" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></select></div>
+        <div><label class="text-xs text-gray-400 mb-1 block">眷屬人數（健保加乘）</label><input type="number" id="sf-dependent-count" min="0" max="10" value="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
+      </div>
+      <p class="text-xs text-gray-300 mt-2">勞保員工負擔 ≈ 投保薪資 × 2.3%　健保員工負擔 ≈ 投保薪資 × 1.551% × (1＋眷屬人數)</p>
+    </div>
+    <div class="flex gap-2 mt-5 justify-end">
+      <button onclick="document.getElementById('salary-modal').classList.add('hidden')" class="border border-gray-200 px-4 py-2 rounded-lg text-sm text-gray-500 hover:bg-gray-50">取消</button>
+      <button onclick="saveSalarySettings()" class="btn-gold px-4 py-2 rounded-lg text-sm font-medium">儲存設定</button>
+    </div>
+  </div>
+</div>
+
+<!-- 加班審核 Modal -->
+<div id="ot-modal" class="hidden fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+  <div class="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-bold text-lg">審核加班申請</h3>
+      <button onclick="document.getElementById('ot-modal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
+    </div>
+    <div id="ot-modal-content" class="text-sm text-gray-600 leading-relaxed mb-4"></div>
+    <div class="mb-4">
+      <label class="text-xs text-gray-400 mb-1 block">備注（可選）</label>
+      <input type="text" id="ot-note" placeholder="例：已確認" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
+    </div>
+    <div class="flex gap-2 justify-end">
+      <button onclick="document.getElementById('ot-modal').classList.add('hidden')" class="border border-gray-200 px-4 py-2 rounded-lg text-sm text-gray-500 hover:bg-gray-50">取消</button>
+      <button onclick="reviewOT('rejected')" class="bg-red-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-600">❌ 駁回</button>
+      <button onclick="reviewOT('approved')" class="bg-green-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-600">✅ 核准</button>
+    </div>
+  </div>
+</div>
+
+<!-- 薪資單 Modal -->
+<div id="slip-modal" class="hidden fixed inset-0 bg-black/40 flex items-center justify-center z-50 overflow-y-auto py-6">
+  <div class="bg-white rounded-2xl shadow-xl p-6 w-full max-w-2xl mx-4">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-bold text-lg" id="slip-title">薪資單</h3>
+      <button onclick="document.getElementById('slip-modal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
+    </div>
+    <div id="slip-body"></div>
+    <div class="flex gap-2 mt-5 justify-end">
+      <button onclick="document.getElementById('slip-modal').classList.add('hidden')" class="border border-gray-200 px-4 py-2 rounded-lg text-sm text-gray-500 hover:bg-gray-50">關閉</button>
+      <button onclick="printSlip()" class="bg-amber-400 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-amber-500">🖨️ 列印</button>
+      <button id="slip-confirm-btn" onclick="confirmPayroll()" class="bg-green-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-600">✅ 確認發放</button>
+      <button onclick="notifyEmployee()" class="btn-gold px-4 py-2 rounded-lg text-sm font-medium">📲 推播</button>
+    </div>
+  </div>
+</div>
+
+<!-- 列印區（列印時才顯示）-->
+<div id="print-area" style="display:none"></div>
+<style>
+  @media print {
+    body > * { display: none !important; }
+    #print-area { display: block !important; }
+  }
+</style>
+</body>
+</html>
