@@ -763,21 +763,44 @@ async function loadAtt() {
     tbody.innerHTML = '<tr><td colspan="8" class="px-4 py-8 text-center text-gray-300 text-sm">無出勤記錄</td></tr>';
     return;
   }
-  tbody.innerHTML = records.map(r => `
+  tbody.innerHTML = records.map(r => {
+    const hasSegs = Array.isArray(r.segments) && r.segments.length > 1;
+    const outBadge = r.segmentCount > 1
+      ? `<span onclick="toggleSeg('${r.id}')" class="ml-1 text-[10px] text-blue-500 cursor-pointer hover:underline">外出${r.segmentCount - 1}次 ▾</span>`
+      : '';
+    const detailRow = hasSegs ? `
+      <tr id="seg-${r.id}" class="hidden bg-blue-50">
+        <td colspan="8" class="px-6 py-2 text-xs text-gray-600">
+          <div class="font-semibold text-gray-500 mb-1">📋 進出明細</div>
+          ${r.segments.map((s, i) => {
+            const last = i === r.segments.length - 1;
+            const tag = !s.out ? '上班中…' : (last ? '下班' : '外出');
+            const color = !s.out ? 'text-red-500' : (last ? 'text-yellow-700' : 'text-blue-500');
+            return `<div class="flex gap-2 py-0.5"><span class="text-gray-400 w-14">第${i + 1}段</span><span class="font-mono text-green-600">${s.in || '--:--'}</span><span class="text-gray-300">→</span><span class="font-mono text-yellow-700">${s.out || '--:--'}</span><span class="${color}">（${tag}）</span></div>`;
+          }).join('')}
+        </td>
+      </tr>` : '';
+    return `
     <tr class="border-t hover:bg-gray-50 transition">
       <td class="px-4 py-2.5 font-mono text-xs">${r.date}</td>
       <td class="px-4 py-2.5 font-medium">${r.employeeName}</td>
       <td class="px-4 py-2.5 text-gray-400 text-xs">${r.department}</td>
       <td class="px-4 py-2.5 text-green-600 font-mono text-xs">${r.checkIn || '--:--'}</td>
-      <td class="px-4 py-2.5 font-mono text-xs">${r.incomplete ? '<span class="text-red-500">⚠️ 未完成</span>' : `<span class="text-yellow-700">${r.checkOut || '--:--'}</span>`}${r.segmentCount > 1 ? `<span class="ml-1 text-[10px] text-blue-500">外出${r.segmentCount - 1}次</span>` : ''}</td>
+      <td class="px-4 py-2.5 font-mono text-xs">${r.incomplete ? '<span class="text-red-500">⚠️ 未完成</span>' : `<span class="text-yellow-700">${r.checkOut || '--:--'}</span>`}${outBadge}</td>
       <td class="px-4 py-2.5 text-gray-600">${r.workHours != null ? r.workHours + 'h' : '-'}</td>
       <td class="px-4 py-2.5">${badge(r.checkIn, r.status)}</td>
       <td class="px-4 py-2.5 whitespace-nowrap">
         <button onclick="openAttModal('${r.id}')" class="text-yellow-700 text-xs hover:underline mr-2">編輯</button>
         <button onclick="deleteAttRecord('${r.id}')" class="text-red-400 text-xs hover:text-red-600 hover:underline">刪除</button>
       </td>
-    </tr>
-  `).join('');
+    </tr>${detailRow}`;
+  }).join('');
+}
+
+// 展開/收合某筆出勤的「進出明細」
+function toggleSeg(id) {
+  const el = document.getElementById('seg-' + id);
+  if (el) el.classList.toggle('hidden');
 }
 
 function openAttModal(id) {
