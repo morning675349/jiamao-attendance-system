@@ -270,11 +270,12 @@ function getAllAnnouncements() {
   return db.announcements || [];
 }
 
-function createAnnouncement({ title, content }) {
+function createAnnouncement({ title, content, imagePath }) {
   const db = readDb();
   if (!db.announcements) db.announcements = [];
   const ann = {
     id: uuidv4(), title, content,
+    imagePath: imagePath || null,
     active: true,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()

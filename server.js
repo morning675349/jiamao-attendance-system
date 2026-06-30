@@ -29,7 +29,7 @@ if (hasLineConfig) {
   app.post('/webhook', express.json(), (req, res) => res.json({ status: 'line_not_configured' }));
 }
 
-app.use(express.json());
+app.use(express.json({ limit: '6mb' }));
 
 // 這個路由必須在 apiRouter 之前，否則被 auth middleware 攔截
 app.get('/api/liff-id', (req, res) => res.json({ liffId: process.env.LIFF_ID || null }));

@@ -391,9 +391,16 @@ async function sendMyLeaves(replyToken, lineId, employee) {
 async function sendAnnouncements(replyToken) {
   const anns = db.getAllAnnouncements().filter(a => a.active).slice(-5).reverse();
   if (!anns.length) return reply(replyToken, '📢 目前沒有公告');
+  const base = process.env.BASE_URL || 'https://attendance.jiamao.com.tw';
   const text = '📢 公司公告\n' + '─'.repeat(14) + '\n\n' +
-    anns.map(a => `【${a.title}】\n${a.content}`).join('\n\n' + '─'.repeat(14) + '\n\n');
-  return reply(replyToken, text);
+    anns.map(a => `【${a.title}】\n${a.content}${a.imagePath ? '\n📷（附圖如下）' : ''}`).join('\n\n' + '─'.repeat(14) + '\n\n');
+  const messages = [{ type: 'text', text }];
+  // LINE 一次回覆上限 5 則：文字佔 1，最多再帶 4 張圖
+  anns.filter(a => a.imagePath).slice(0, 4).forEach(a => {
+    const url = `${base}/api/announcement-image/${a.id}`;
+    messages.push({ type: 'image', originalContentUrl: url, previewImageUrl: url });
+  });
+  return client.replyMessage({ replyToken, messages });
 }
 
 async function sendForgotLink(replyToken) {

@@ -373,6 +373,11 @@
             <textarea id="ann-content" rows="4" placeholder="公告內容..."
               class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-yellow-400"></textarea>
           </div>
+          <div>
+            <label class="text-xs text-gray-800 font-semibold mb-1 block">圖片（選填，會隨公告發給員工）</label>
+            <input type="file" id="ann-image" accept="image/png,image/jpeg" onchange="previewAnnImage()" class="text-xs text-gray-600">
+            <img id="ann-image-preview" class="hidden mt-2 max-h-40 rounded-lg border border-gray-200">
+          </div>
         </div>
         <div class="flex gap-2 mt-4">
           <button onclick="saveAnn()"
@@ -1046,6 +1051,30 @@ function badge(checkIn, status) {
 
 // ── Announcements ─────────────────────────────────────
 let editingAnnId = null;
+let annImageBase64 = null;   // 新選的圖片（壓縮後 data URL）；null = 未變更
+
+// 選圖後自動壓縮到最長邊 1280px、JPEG 0.85，並預覽
+function previewAnnImage() {
+  const f = document.getElementById('ann-image').files[0];
+  const prev = document.getElementById('ann-image-preview');
+  if (!f) { annImageBase64 = null; prev.classList.add('hidden'); return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      const max = 1280;
+      let w = img.width, h = img.height;
+      if (w > max || h > max) { const r = Math.min(max / w, max / h); w = Math.round(w * r); h = Math.round(h * r); }
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      annImageBase64 = c.toDataURL('image/jpeg', 0.85);
+      prev.src = annImageBase64; prev.classList.remove('hidden');
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(f);
+}
 
 async function loadAnnouncements() {
   const anns = await api('/announcements');
@@ -1067,6 +1096,7 @@ async function loadAnnouncements() {
             </span>
           </div>
           <p class="text-sm text-gray-600 whitespace-pre-wrap leading-relaxed">${a.content}</p>
+          ${a.imagePath ? `<img src="/api/announcement-image/${a.id}" class="mt-2 max-h-40 rounded-lg border border-gray-200">` : ''}
           <p class="text-xs text-gray-300 mt-2">${a.createdAt.slice(0,10)} 建立</p>
         </div>
         <div class="flex flex-col gap-1.5 flex-shrink-0">
@@ -1101,6 +1131,9 @@ function toggleAnnForm(show) {
     document.getElementById('ann-title').value = '';
     document.getElementById('ann-content').value = '';
     document.getElementById('ann-form-title').textContent = '新增公告';
+    annImageBase64 = null;
+    document.getElementById('ann-image').value = '';
+    document.getElementById('ann-image-preview').classList.add('hidden');
   }
 }
 
@@ -1110,6 +1143,11 @@ function editAnn(ann) {
   document.getElementById('ann-title').value = ann.title;
   document.getElementById('ann-content').value = ann.content;
   document.getElementById('ann-form-title').textContent = '編輯公告';
+  annImageBase64 = null;
+  document.getElementById('ann-image').value = '';
+  const prev = document.getElementById('ann-image-preview');
+  if (ann.imagePath) { prev.src = '/api/announcement-image/' + ann.id + '?t=' + Date.now(); prev.classList.remove('hidden'); }
+  else prev.classList.add('hidden');
   toggleAnnForm(true);
   document.getElementById('ann-form').scrollIntoView({ behavior: 'smooth' });
 }
@@ -1120,10 +1158,12 @@ async function saveAnn() {
   const content = document.getElementById('ann-content').value.trim();
   if (!title || !content) return alert('請填寫標題與內容');
 
+  const body = { title, content };
+  if (annImageBase64) body.imageBase64 = annImageBase64;
   if (id) {
-    await api('/announcements/' + id, { method: 'PUT', body: JSON.stringify({ title, content }) });
+    await api('/announcements/' + id, { method: 'PUT', body: JSON.stringify(body) });
   } else {
-    await api('/announcements', { method: 'POST', body: JSON.stringify({ title, content }) });
+    await api('/announcements', { method: 'POST', body: JSON.stringify(body) });
   }
   toggleAnnForm(false);
   loadAnnouncements();

@@ -16,6 +16,21 @@ const CHECKIN_OPEN_BEFORE_MIN = 5;
 const hhmmToMin = t => { const [h, m] = String(t).split(':').map(Number); return h * 60 + m; };
 const minToHhmm = n => `${String(Math.floor(n / 60)).padStart(2, '0')}:${String(n % 60).padStart(2, '0')}`;
 
+// 公開網址基底（LINE 發圖需公開可抓的 https 網址）
+const BASE_URL = process.env.BASE_URL || 'https://attendance.jiamao.com.tw';
+
+// 儲存公告圖片（data URL → data/uploads/ann-<id>.<ext>），回傳檔名
+function saveAnnouncementImage(id, dataUrl) {
+  const m = /^data:image\/(png|jpe?g);base64,(.+)$/i.exec(dataUrl || '');
+  if (!m) return null;
+  const ext = /png/i.test(m[1]) ? 'png' : 'jpg';
+  const dir = path.join(__dirname, '..', 'data', 'uploads');
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  const fileName = `ann-${id}.${ext}`;
+  fs.writeFileSync(path.join(dir, fileName), Buffer.from(m[2], 'base64'));
+  return fileName;
+}
+
 // 所有 API 回應禁止 Varnish 快取
 router.use((req, res, next) => {
   res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
@@ -204,6 +219,15 @@ router.get('/leaves/:id/document', (req, res) => {
   const leave = db.getLeaveById(req.params.id);
   if (!leave || !leave.documentPath) return res.status(404).json({ error: '查無證明文件' });
   const filePath = path.join(__dirname, '..', 'data', 'uploads', leave.documentPath);
+  if (!fs.existsSync(filePath)) return res.status(404).json({ error: '檔案不存在' });
+  res.sendFile(filePath);
+});
+
+// 公告圖片（公開：LINE 需公開網址才能發圖給員工）
+router.get('/announcement-image/:id', (req, res) => {
+  const ann = db.getAllAnnouncements().find(a => a.id === req.params.id);
+  if (!ann || !ann.imagePath) return res.status(404).json({ error: '查無圖片' });
+  const filePath = path.join(__dirname, '..', 'data', 'uploads', ann.imagePath);
   if (!fs.existsSync(filePath)) return res.status(404).json({ error: '檔案不存在' });
   res.sendFile(filePath);
 });
@@ -422,13 +446,23 @@ router.get('/announcements', (req, res) => {
 });
 
 router.post('/announcements', (req, res) => {
-  const { title, content } = req.body;
+  const { title, content, imageBase64 } = req.body;
   if (!title?.trim() || !content?.trim()) return res.status(400).json({ error: '請填寫標題與內容' });
-  res.json(db.createAnnouncement({ title: title.trim(), content: content.trim() }));
+  const ann = db.createAnnouncement({ title: title.trim(), content: content.trim() });
+  if (imageBase64) {
+    const saved = saveAnnouncementImage(ann.id, imageBase64);
+    if (saved) db.updateAnnouncement(ann.id, { imagePath: saved });
+  }
+  res.json(db.getAllAnnouncements().find(a => a.id === ann.id));
 });
 
 router.put('/announcements/:id', (req, res) => {
-  const ann = db.updateAnnouncement(req.params.id, req.body);
+  const { imageBase64, ...updates } = req.body;
+  if (imageBase64) {
+    const saved = saveAnnouncementImage(req.params.id, imageBase64);
+    if (saved) updates.imagePath = saved;
+  }
+  const ann = db.updateAnnouncement(req.params.id, updates);
   if (!ann) return res.status(404).json({ error: '公告不存在' });
   res.json(ann);
 });
@@ -442,13 +476,13 @@ router.post('/announcements/:id/push', async (req, res) => {
   const ann = db.getAllAnnouncements().find(a => a.id === req.params.id);
   if (!ann) return res.status(404).json({ error: '公告不存在' });
 
+  const messages = [{ type: 'text', text: `📢 公司公告\n\n【${ann.title}】\n\n${ann.content}` }];
+  if (ann.imagePath) {
+    const url = `${BASE_URL}/api/announcement-image/${ann.id}`;
+    messages.push({ type: 'image', originalContentUrl: url, previewImageUrl: url });
+  }
   const employees = db.getAllEmployees().filter(e => e.role === 'employee');
-  await Promise.allSettled(employees.map(emp =>
-    client.pushMessage({
-      to: emp.lineId,
-      messages: [{ type: 'text', text: `📢 公司公告\n\n【${ann.title}】\n\n${ann.content}` }]
-    })
-  ));
+  await Promise.allSettled(employees.map(emp => client.pushMessage({ to: emp.lineId, messages })));
   res.json({ pushed: employees.length });
 });
 
