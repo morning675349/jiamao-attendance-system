@@ -99,8 +99,8 @@
       </div>
       <hr class="border-gray-100">
       <div>
-        <label class="text-xs text-gray-500 mb-1 block">補打類型</label>
-        <select id="forgot-type" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+        <label class="text-sm text-gray-600 mb-1 block">補打類型</label>
+        <select id="forgot-type" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-base"
           onchange="onForgotTypeChange()">
           <option value="checkin">補上班打卡（08:00）</option>
           <option value="checkout">補下班打卡（17:00）</option>
@@ -109,20 +109,20 @@
         </select>
       </div>
       <div>
-        <label class="text-xs text-gray-500 mb-1 block">補打日期</label>
+        <label class="text-sm text-gray-600 mb-1 block">補打日期</label>
         <input type="date" id="forgot-date"
-          class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
+          class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-base">
       </div>
       <div>
-        <label class="text-xs text-gray-500 mb-1 block">申請打卡時間</label>
+        <label class="text-sm text-gray-600 mb-1 block">申請打卡時間</label>
         <input type="time" id="forgot-time"
-          class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
+          class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-base">
         <p id="forgot-time-hint" class="text-xs text-gray-400 mt-1"></p>
       </div>
       <div>
-        <label class="text-xs text-gray-500 mb-1 block">忘記打卡原因 <span class="text-red-400">*</span></label>
+        <label class="text-sm text-gray-600 mb-1 block">忘記打卡原因 <span class="text-red-400">*</span></label>
         <textarea id="forgot-reason" rows="3" placeholder="請說明忘記打卡的原因..."
-          class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-amber-400"></textarea>
+          class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-base resize-none focus:outline-none focus:ring-2 focus:ring-amber-400"></textarea>
       </div>
     </div>
     <div class="px-6 pb-6 space-y-2">
@@ -153,24 +153,24 @@
       </div>
       <hr class="border-gray-100">
       <div>
-        <label class="text-xs text-gray-500 mb-1 block">加班日期</label>
-        <input type="date" id="ot-date" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
+        <label class="text-sm text-gray-600 mb-1 block">加班日期</label>
+        <input type="date" id="ot-date" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-base">
       </div>
       <div class="grid grid-cols-2 gap-3">
         <div>
-          <label class="text-xs text-gray-500 mb-1 block">開始時間</label>
-          <input type="time" id="ot-start" value="17:30" oninput="updateOtHours()" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
+          <label class="text-sm text-gray-600 mb-1 block">開始時間</label>
+          <input type="time" id="ot-start" value="17:30" oninput="updateOtHours()" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-base">
         </div>
         <div>
-          <label class="text-xs text-gray-500 mb-1 block">結束時間</label>
-          <input type="time" id="ot-end" value="19:00" oninput="updateOtHours()" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
+          <label class="text-sm text-gray-600 mb-1 block">結束時間</label>
+          <input type="time" id="ot-end" value="19:00" oninput="updateOtHours()" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-base">
         </div>
       </div>
       <p id="ot-hours" class="text-xs text-amber-600 font-medium"></p>
       <div>
-        <label class="text-xs text-gray-500 mb-1 block">加班原因 <span class="text-red-400">*</span></label>
+        <label class="text-sm text-gray-600 mb-1 block">加班原因 <span class="text-red-400">*</span></label>
         <div class="flex flex-wrap gap-1.5 mb-2" id="ot-reason-chips"></div>
-        <textarea id="ot-reason" rows="2" placeholder="點上方選項，或自行輸入..." class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-amber-400"></textarea>
+        <textarea id="ot-reason" rows="2" placeholder="點上方選項，或自行輸入..." class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-base resize-none focus:outline-none focus:ring-2 focus:ring-amber-400"></textarea>
       </div>
     </div>
     <div class="px-6 pb-6 space-y-2">
@@ -195,8 +195,8 @@
       </div>
       <hr class="border-gray-100">
       <div>
-        <label class="text-xs text-gray-500 mb-1 block">假別</label>
-        <select id="lv-type" onchange="onLeaveTypeChange()" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
+        <label class="text-sm text-gray-600 mb-1 block">假別</label>
+        <select id="lv-type" onchange="onLeaveTypeChange()" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-base">
           <option value="annual">特休假</option>
           <option value="sick">病假</option>
           <option value="personal">事假</option>
@@ -204,15 +204,15 @@
         </select>
       </div>
       <div>
-        <label class="text-xs text-gray-500 mb-1 block">請假日期</label>
-        <input type="date" id="lv-date" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
+        <label class="text-sm text-gray-600 mb-1 block">請假日期</label>
+        <input type="date" id="lv-date" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-base">
       </div>
       <div>
-        <label class="text-xs text-gray-500 mb-1 block">請假原因 <span class="text-red-400">*</span></label>
-        <textarea id="lv-reason" rows="2" placeholder="請說明請假原因..." class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-400"></textarea>
+        <label class="text-sm text-gray-600 mb-1 block">請假原因 <span class="text-red-400">*</span></label>
+        <textarea id="lv-reason" rows="2" placeholder="請說明請假原因..." class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-base resize-none focus:outline-none focus:ring-2 focus:ring-blue-400"></textarea>
       </div>
       <div id="lv-doc-box" class="hidden">
-        <label class="text-xs text-gray-500 mb-1 block">證明文件（選填）</label>
+        <label class="text-sm text-gray-600 mb-1 block">證明文件（選填）</label>
         <input type="file" id="lv-image" accept="image/png,image/jpeg" onchange="previewLeaveImage()" class="text-xs text-gray-600">
         <img id="lv-image-preview" class="hidden mt-2 max-h-32 rounded-lg border border-gray-200">
         <p id="lv-doc-hint" class="text-xs text-gray-400 mt-1"></p>
@@ -520,7 +520,7 @@ function openOvertime() {
   document.getElementById('ot-date').value = todayTaipei();
   const chips = document.getElementById('ot-reason-chips');
   chips.innerHTML = ['趕工出貨','生產排程','設備維修','盤點','臨時任務'].map(r =>
-    `<button type="button" onclick="document.getElementById('ot-reason').value='${r}'" class="px-2.5 py-1 rounded-full text-xs border border-gray-200 text-gray-600 hover:bg-amber-50 hover:border-amber-300">${r}</button>`
+    `<button type="button" onclick="document.getElementById('ot-reason').value='${r}'" class="px-3 py-1.5 rounded-full text-sm border border-gray-200 text-gray-600 hover:bg-amber-50 hover:border-amber-300">${r}</button>`
   ).join('');
   updateOtHours();
   show('overtime');
