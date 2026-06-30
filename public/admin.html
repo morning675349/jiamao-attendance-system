@@ -137,7 +137,7 @@
       <!-- Today table -->
       <div class="bg-white rounded-xl shadow-sm border border-gray-100">
         <div class="px-4 py-3 border-b flex items-center justify-between">
-          <h3 class="font-semibold text-sm">今日出勤明細</h3>
+          <h3 class="font-bold text-sm text-gray-800">今日出勤明細</h3>
         </div>
         <div class="overflow-auto">
           <table class="w-full text-sm">
@@ -309,7 +309,7 @@
 
       <!-- Add form -->
       <div id="add-form" class="hidden bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-4 fade">
-        <h3 class="font-semibold text-sm mb-3">新增員工</h3>
+        <h3 class="font-bold text-sm text-gray-800 mb-3">新增員工</h3>
         <div class="grid grid-cols-2 gap-3 mb-3">
           <input id="f-name" placeholder="姓名 *" class="border border-gray-200 rounded-lg px-3 py-2 text-sm">
           <input id="f-lineid" placeholder="LINE User ID *" class="border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono text-xs">
@@ -360,7 +360,7 @@
 
       <!-- Add/Edit form -->
       <div id="ann-form" class="hidden bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-4 fade">
-        <h3 class="font-semibold text-sm mb-3" id="ann-form-title">新增公告</h3>
+        <h3 class="font-bold text-sm text-gray-800 mb-3" id="ann-form-title">新增公告</h3>
         <input type="hidden" id="ann-edit-id">
         <div class="space-y-3">
           <div>
@@ -393,7 +393,7 @@
       <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-4">
         <div class="flex items-center justify-between mb-4">
           <div>
-            <h3 class="font-semibold">📍 地理圍欄</h3>
+            <h3 class="font-bold text-sm text-gray-800">📍 地理圍欄</h3>
             <p class="text-xs text-gray-400 mt-0.5">限制員工必須在指定範圍內才能打卡</p>
           </div>
           <label class="relative inline-flex items-center cursor-pointer">
@@ -454,7 +454,7 @@
 
       <!-- LIFF setup guide -->
       <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <h3 class="font-semibold mb-3">📱 LIFF 手機打卡設定</h3>
+        <h3 class="font-bold text-sm text-gray-800 mb-3">📱 LIFF 手機打卡設定</h3>
         <div class="space-y-3 text-sm text-gray-600">
           <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-amber-700 text-xs">
             設定 LIFF 後，員工手機 GPS 會直接抓取，無法手動選位置
@@ -1394,10 +1394,42 @@ async function openSalaryModal(lineId, name) {
   });
   const bsel = document.getElementById('sf-insurance-bracket');
   if (bsel && s.insuranceBracket) bsel.value = s.insuranceBracket;
+  clearSalaryError();
+  filterSalaryFields();        // 依公司顯示對應欄位
   document.getElementById('salary-modal').classList.remove('hidden');
 }
 
+// B：依選擇的公司，只顯示該公司專屬欄位（無 data-co = 通用，永遠顯示）
+function filterSalaryFields() {
+  const co = document.getElementById('sf-company-id').value;
+  document.querySelectorAll('#salary-modal [data-co]').forEach(el => {
+    el.style.display = (!co || el.getAttribute('data-co') === co) ? '' : 'none';
+  });
+}
+
+// C：驗證提示
+function clearSalaryError() {
+  document.getElementById('sf-error')?.classList.add('hidden');
+  ['sf-company-id','sf-base-salary'].forEach(id =>
+    document.getElementById(id)?.classList.remove('ring-2','ring-red-400'));
+}
+function showSalaryError(msg, focusId) {
+  const errEl = document.getElementById('sf-error');
+  errEl.textContent = msg;
+  errEl.classList.remove('hidden');
+  const el = document.getElementById(focusId);
+  el?.classList.add('ring-2','ring-red-400');
+  el?.focus();
+}
+
 async function saveSalarySettings() {
+  clearSalaryError();
+  // C：必填驗證
+  const companyId = document.getElementById('sf-company-id').value;
+  const baseSalary = Number(document.getElementById('sf-base-salary').value) || 0;
+  if (!companyId)     return showSalaryError('⚠️ 請先選擇公司', 'sf-company-id');
+  if (baseSalary <= 0) return showSalaryError('⚠️ 請輸入底薪（需大於 0）', 'sf-base-salary');
+
   const fields = ['companyId','baseSalary','jobAllowance','perfectAttendance','transportAllowance','phoneAllowance','businessTripFuel','quarterBonus','performanceBonus','supportAllowance','driverAllowance','skillAllowance','holidayGift','otherAllowance','dependentCount','insuranceBracket'];
   const data = {};
   fields.forEach(f => {
@@ -1518,7 +1550,7 @@ async function loadPayrollCalc() {
     }).join('');
     return `<div class="bg-white rounded-xl shadow-sm border border-gray-100 mb-4 overflow-auto">
       <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-        <h3 class="font-semibold text-sm">${g.year}年${g.month}月　${co?.name||g.companyId}</h3>
+        <h3 class="font-bold text-sm text-gray-800">${g.year}年${g.month}月　${co?.name||g.companyId}</h3>
         <span class="text-sm text-gray-500">本月薪資支出合計：<b class="text-blue-600">\$${totalNet.toLocaleString()}</b></span>
       </div>
       <table class="w-full text-sm">
@@ -1626,7 +1658,7 @@ async function initCompanies() {
 function renderCompanies() {
   document.getElementById('co-panel').innerHTML = payrollCompanies.map(c => `
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-      <h3 class="font-semibold mb-3">${c.name}</h3>
+      <h3 class="font-bold text-sm text-gray-800 mb-3">${c.name}</h3>
       <div class="grid grid-cols-3 gap-4 mb-4" style="max-width:480px">
         <div>
           <label class="text-xs text-gray-800 font-semibold mb-1 block">上班時間</label>
@@ -1700,18 +1732,18 @@ if (token) {
     </div>
     <p class="text-sm text-gray-700 font-medium mb-4" id="sf-emp-name"></p>
     <div class="grid grid-cols-2 gap-3">
-      <div><label class="text-xs text-gray-800 font-semibold mb-1 block">公司</label><select id="sf-company-id" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></select></div>
-      <div><label class="text-xs text-gray-800 font-semibold mb-1 block">底薪（月薪）</label><input type="number" id="sf-base-salary" min="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
+      <div><label class="text-xs text-gray-800 font-semibold mb-1 block">公司 <span class="text-red-500">*</span></label><select id="sf-company-id" onchange="filterSalaryFields()" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></select></div>
+      <div><label class="text-xs text-gray-800 font-semibold mb-1 block">底薪（月薪）<span class="text-red-500">*</span></label><input type="number" id="sf-base-salary" min="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
       <div><label class="text-xs text-gray-800 font-semibold mb-1 block">職務加給</label><input type="number" id="sf-job-allowance" min="0" value="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
-      <div><label class="text-xs text-gray-800 font-semibold mb-1 block">全勤獎金（佳懋）</label><input type="number" id="sf-perfect-attendance" min="0" value="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
-      <div><label class="text-xs text-gray-800 font-semibold mb-1 block">交通費（佳懋）</label><input type="number" id="sf-transport-allowance" min="0" value="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
-      <div><label class="text-xs text-gray-800 font-semibold mb-1 block">電話費（佳懋）</label><input type="number" id="sf-phone-allowance" min="0" value="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
-      <div><label class="text-xs text-gray-800 font-semibold mb-1 block">出差油資（佳懋設計部）</label><input type="number" id="sf-business-trip-fuel" min="0" value="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
-      <div><label class="text-xs text-gray-800 font-semibold mb-1 block">季獎金（佳懋設計部）</label><input type="number" id="sf-quarter-bonus" min="0" value="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
-      <div><label class="text-xs text-gray-800 font-semibold mb-1 block">績效獎金（晟涬）</label><input type="number" id="sf-performance-bonus" min="0" value="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
-      <div><label class="text-xs text-gray-800 font-semibold mb-1 block">支援其他部門津貼（晟涬）</label><input type="number" id="sf-support-allowance" min="0" value="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
-      <div><label class="text-xs text-gray-800 font-semibold mb-1 block">駕駛津貼（晟涬）</label><input type="number" id="sf-driver-allowance" min="0" value="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
-      <div><label class="text-xs text-gray-800 font-semibold mb-1 block">技能津貼-天車（晟涬）</label><input type="number" id="sf-skill-allowance" min="0" value="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
+      <div data-co="jiamao"><label class="text-xs text-gray-800 font-semibold mb-1 block">全勤獎金（佳懋）</label><input type="number" id="sf-perfect-attendance" min="0" value="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
+      <div data-co="jiamao"><label class="text-xs text-gray-800 font-semibold mb-1 block">交通費（佳懋）</label><input type="number" id="sf-transport-allowance" min="0" value="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
+      <div data-co="jiamao"><label class="text-xs text-gray-800 font-semibold mb-1 block">電話費（佳懋）</label><input type="number" id="sf-phone-allowance" min="0" value="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
+      <div data-co="jiamao"><label class="text-xs text-gray-800 font-semibold mb-1 block">出差油資（佳懋設計部）</label><input type="number" id="sf-business-trip-fuel" min="0" value="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
+      <div data-co="jiamao"><label class="text-xs text-gray-800 font-semibold mb-1 block">季獎金（佳懋設計部）</label><input type="number" id="sf-quarter-bonus" min="0" value="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
+      <div data-co="shengxing"><label class="text-xs text-gray-800 font-semibold mb-1 block">績效獎金（晟涬）</label><input type="number" id="sf-performance-bonus" min="0" value="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
+      <div data-co="shengxing"><label class="text-xs text-gray-800 font-semibold mb-1 block">支援其他部門津貼（晟涬）</label><input type="number" id="sf-support-allowance" min="0" value="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
+      <div data-co="shengxing"><label class="text-xs text-gray-800 font-semibold mb-1 block">駕駛津貼（晟涬）</label><input type="number" id="sf-driver-allowance" min="0" value="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
+      <div data-co="shengxing"><label class="text-xs text-gray-800 font-semibold mb-1 block">技能津貼-天車（晟涬）</label><input type="number" id="sf-skill-allowance" min="0" value="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
       <div><label class="text-xs text-gray-800 font-semibold mb-1 block">節日禮金</label><input type="number" id="sf-holiday-gift" min="0" value="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
       <div><label class="text-xs text-gray-800 font-semibold mb-1 block">其他津貼</label><input type="number" id="sf-other-allowance" min="0" value="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
     </div>
@@ -1723,6 +1755,7 @@ if (token) {
       </div>
       <p class="text-xs text-red-600 font-medium mt-2">⚠️ 勞保員工負擔 ≈ 投保薪資 × 2.3%　健保員工負擔 ≈ 投保薪資 × 1.551% × (1＋眷屬人數)</p>
     </div>
+    <p id="sf-error" class="hidden text-red-600 text-sm font-semibold mt-4 bg-red-50 border border-red-200 rounded-lg px-3 py-2"></p>
     <div class="flex gap-2 mt-5 justify-end">
       <button onclick="document.getElementById('salary-modal').classList.add('hidden')" class="border border-gray-200 px-4 py-2 rounded-lg text-sm text-gray-500 hover:bg-gray-50">取消</button>
       <button onclick="saveSalarySettings()" class="btn-gold px-4 py-2 rounded-lg text-sm font-medium">儲存設定</button>
