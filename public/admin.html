@@ -1606,6 +1606,43 @@ async function loadPayrollCalc() {
   }).join('');
 }
 
+const INC_FIELDS = [
+  ['baseSalary','底薪'],['jobAllowance','職務加給'],['perfectAttendance','全勤獎金'],
+  ['mealAllowance','伙食津貼'],['overtimeMealAllowance','加班伙食津貼'],['overtimePay','加班費'],
+  ['transportAllowance','交通費'],['phoneAllowance','電話費'],['businessTripFuel','出差油資'],
+  ['quarterBonus','季獎金'],['performanceBonus','績效獎金'],['supportAllowance','支援其他部門津貼'],
+  ['driverAllowance','駕駛津貼'],['skillAllowance','技能津貼'],['holidayGift','節日禮金'],['otherAllowance','其他津貼'],
+];
+const DED_FIELDS = [
+  ['laborInsurance','勞保費'],['healthInsurance','健保費'],['lateDeduction','遲到扣款'],['leaveDeduction','假別扣款'],
+];
+
+// 即時重算合計與實領
+function recalcSlip() {
+  let ti = 0, td = 0;
+  INC_FIELDS.forEach(([k]) => ti += Number(document.getElementById('inc-' + k).value) || 0);
+  DED_FIELDS.forEach(([k]) => td += Number(document.getElementById('ded-' + k).value) || 0);
+  document.getElementById('slip-total-income').textContent = '$' + ti.toLocaleString();
+  document.getElementById('slip-total-deductions').textContent = '$' + td.toLocaleString();
+  document.getElementById('slip-net').textContent = '$' + (ti - td).toLocaleString();
+}
+
+// 從輸入框收集目前的薪資單內容
+function gatherSlipData() {
+  const income = {}, deductions = {};
+  let ti = 0, td = 0;
+  INC_FIELDS.forEach(([k]) => { const v = Number(document.getElementById('inc-' + k).value) || 0; income[k] = v; ti += v; });
+  DED_FIELDS.forEach(([k]) => { const v = Number(document.getElementById('ded-' + k).value) || 0; deductions[k] = v; td += v; });
+  return { income, deductions, totalIncome: ti, totalDeductions: td, netSalary: ti - td,
+           notes: document.getElementById('slip-notes').value || '', manualEdited: true };
+}
+
+async function saveSlipEdits() {
+  await payrollApi('/payrolls/' + currentSlipId, { method: 'PUT', body: JSON.stringify(gatherSlipData()) });
+  alert('✅ 薪資單已儲存');
+  loadPayrollCalc();
+}
+
 let currentSlipId = '';
 async function openSlipModal(id) {
   currentSlipId = id;
@@ -1615,51 +1652,37 @@ async function openSlipModal(id) {
   document.getElementById('slip-confirm-btn').style.display = p.status==='confirmed' ? 'none' : '';
 
   const inc = p.income||{}, ded = p.deductions||{};
-  const incItems = [
-    ['底薪', inc.baseSalary],['職務加給', inc.jobAllowance],['全勤獎金', inc.perfectAttendance],
-    ['伙食津貼', inc.mealAllowance],['加班伙食津貼', inc.overtimeMealAllowance],['加班費', inc.overtimePay],
-    ['交通費', inc.transportAllowance],['電話費', inc.phoneAllowance],
-    ['出差油資', inc.businessTripFuel],['季獎金', inc.quarterBonus],
-    ['績效獎金', inc.performanceBonus],['支援其他部門津貼', inc.supportAllowance],
-    ['駕駛津貼', inc.driverAllowance],['技能津貼', inc.skillAllowance],
-    ['節日禮金', inc.holidayGift],['其他津貼', inc.otherAllowance],
-  ].filter(([,v])=>v);
-  const dedItems = [
-    ['勞保費', ded.laborInsurance],['健保費', ded.healthInsurance],
-    ['遲到扣款', ded.lateDeduction],['假別扣款', ded.leaveDeduction],
-  ];
 
   document.getElementById('slip-body').innerHTML = `
-    <div class="text-xs text-gray-400 mb-3">公司：${co?.name||'-'}　出勤${p.summary?.attendanceDays||0}天　加班${p.summary?.totalOTHours||0}H　遲到${p.summary?.totalLateMinutes||0}分　投保${(p.summary?.insuranceBracket||0).toLocaleString()}</div>
+    <div class="text-xs text-gray-400 mb-2">公司：${co?.name||'-'}　出勤${p.summary?.attendanceDays||0}天　加班${p.summary?.totalOTHours||0}H　遲到${p.summary?.totalLateMinutes||0}分　投保${(p.summary?.insuranceBracket||0).toLocaleString()}</div>
+    <div class="text-xs text-amber-600 mb-3">✏️ 金額可直接修改，合計與實領會即時更新；改完按下方「💾 儲存修改」。</div>
     <div class="grid grid-cols-2 gap-4 mb-4">
       <div>
-        <div class="text-xs font-bold text-gray-400 uppercase mb-2 pb-1 border-b">應付薪資項目</div>
-        ${incItems.map(([l,v])=>`<div class="flex justify-between py-1 text-sm border-b border-gray-50"><span>${l}</span><span class="font-mono">\$${Number(v||0).toLocaleString()}</span></div>`).join('')}
-        <div class="flex justify-between py-1.5 text-sm font-bold border-t mt-1"><span>應付合計</span><span class="font-mono">\$${(p.totalIncome||0).toLocaleString()}</span></div>
+        <div class="text-xs font-bold text-gray-700 uppercase mb-2 pb-1 border-b">應付薪資項目</div>
+        ${INC_FIELDS.map(([k,l])=>`<div class="flex justify-between items-center py-1 text-sm border-b border-gray-50"><span>${l}</span><input type="number" id="inc-${k}" value="${Number(inc[k]||0)}" oninput="recalcSlip()" class="w-24 text-right font-mono border border-gray-200 rounded px-2 py-1 text-sm"></div>`).join('')}
+        <div class="flex justify-between py-1.5 text-sm font-bold border-t mt-1"><span>應付合計</span><span class="font-mono" id="slip-total-income">\$${(p.totalIncome||0).toLocaleString()}</span></div>
       </div>
       <div>
-        <div class="text-xs font-bold text-gray-400 uppercase mb-2 pb-1 border-b">應扣薪資項目</div>
-        ${dedItems.map(([l,v])=>`<div class="flex justify-between py-1 text-sm border-b border-gray-50"><span>${l}</span><span class="font-mono">\$${Number(v||0).toLocaleString()}</span></div>`).join('')}
-        <div class="flex justify-between py-1.5 text-sm font-bold border-t mt-1 text-red-500"><span>應扣合計</span><span class="font-mono">\$${(p.totalDeductions||0).toLocaleString()}</span></div>
+        <div class="text-xs font-bold text-gray-700 uppercase mb-2 pb-1 border-b">應扣薪資項目</div>
+        ${DED_FIELDS.map(([k,l])=>`<div class="flex justify-between items-center py-1 text-sm border-b border-gray-50"><span>${l}</span><input type="number" id="ded-${k}" value="${Number(ded[k]||0)}" oninput="recalcSlip()" class="w-24 text-right font-mono border border-gray-200 rounded px-2 py-1 text-sm"></div>`).join('')}
+        <div class="flex justify-between py-1.5 text-sm font-bold border-t mt-1 text-red-500"><span>應扣合計</span><span class="font-mono" id="slip-total-deductions">\$${(p.totalDeductions||0).toLocaleString()}</span></div>
       </div>
     </div>
     <div class="flex justify-between items-center bg-blue-50 rounded-xl px-4 py-3 text-blue-700 font-bold text-base mb-3">
-      <span>✅ 實領薪資</span><span class="font-mono">\$${(p.netSalary||0).toLocaleString()}</span>
+      <span>✅ 實領薪資</span><span class="font-mono" id="slip-net">\$${(p.netSalary||0).toLocaleString()}</span>
     </div>
     <div>
       <label class="text-xs text-gray-800 font-semibold mb-1 block">備注</label>
       <input type="text" id="slip-notes" value="${p.notes||''}" placeholder="備注..." class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
     </div>
-    <div class="text-xs text-gray-300 mt-2">勞保費率：11.5%×20%　健保費率：5.17%×30%×(1+眷屬)</div>
   `;
   preparePrintArea(p, co);
   document.getElementById('slip-modal').classList.remove('hidden');
 }
 
 async function confirmPayroll() {
-  if (!confirm('確認薪資並標記為已發放？')) return;
-  const notes = document.getElementById('slip-notes')?.value||'';
-  await payrollApi('/payrolls/' + currentSlipId, { method:'PUT', body: JSON.stringify({notes}) });
+  if (!confirm('確認薪資並標記為已發放？（會一併存入目前的編輯金額）')) return;
+  await payrollApi('/payrolls/' + currentSlipId, { method:'PUT', body: JSON.stringify(gatherSlipData()) });
   await payrollApi('/payrolls/' + currentSlipId + '/confirm', { method:'POST' });
   document.getElementById('slip-modal').classList.add('hidden');
   alert('✅ 薪資已確認');
@@ -1833,6 +1856,7 @@ if (token) {
     <div id="slip-body"></div>
     <div class="flex gap-2 mt-5 justify-end">
       <button onclick="document.getElementById('slip-modal').classList.add('hidden')" class="border border-gray-200 px-4 py-2 rounded-lg text-sm text-gray-500 hover:bg-gray-50">關閉</button>
+      <button onclick="saveSlipEdits()" class="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-600">💾 儲存修改</button>
       <button onclick="printSlip()" class="bg-amber-400 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-amber-500">🖨️ 列印</button>
       <button id="slip-confirm-btn" onclick="confirmPayroll()" class="bg-green-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-600">✅ 確認發放</button>
       <button onclick="notifyEmployee()" class="btn-gold px-4 py-2 rounded-lg text-sm font-medium">📲 推播</button>
