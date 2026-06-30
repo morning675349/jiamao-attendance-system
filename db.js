@@ -190,17 +190,23 @@ function getLeavesByEmployee(lineId) {
   return readDb().leaves.filter(l => l.lineId === lineId);
 }
 
-function createLeave({ lineId, date, type, reason }) {
+function createLeave({ lineId, date, type, reason, documentPath, hasDocument }) {
   const db = readDb();
   const leave = {
     id: uuidv4(), lineId, date, type, reason,
     status: 'pending',
+    documentPath: documentPath || null,
+    hasDocument: !!hasDocument,
     createdAt: new Date().toISOString(),
     reviewedAt: null, reviewNote: null
   };
   db.leaves.push(leave);
   writeDb(db);
   return leave;
+}
+
+function getLeaveById(id) {
+  return readDb().leaves.find(l => l.id === id) || null;
 }
 
 function reviewLeave(id, status, note) {
@@ -434,7 +440,7 @@ module.exports = {
   getEmployee, getAllEmployees, createEmployee, updateEmployee, deleteEmployee,
   getTodayRecord, getAllAttendance, checkIn, checkOut,
   updateAttendance, deleteAttendance, addAttendance,
-  getAllLeaves, getLeavesByEmployee, createLeave, reviewLeave,
+  getAllLeaves, getLeavesByEmployee, createLeave, reviewLeave, getLeaveById,
   getAllPunchRequests, createPunchRequest, reviewPunchRequest,
   getAllAnnouncements, createAnnouncement, updateAnnouncement, deleteAnnouncement,
   getSettings, updateSettings,

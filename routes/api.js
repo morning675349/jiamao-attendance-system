@@ -1,5 +1,7 @@
 const express = require('express');
 const https = require('https');
+const fs = require('fs');
+const path = require('path');
 const router = express.Router();
 const db = require('../db');
 const client = require('../lineClient');
@@ -192,6 +194,17 @@ router.post('/liff/punch-request', async (req, res) => {
   });
 
   res.json(request);
+});
+
+// 請假證明文件（需 admin token；可用 ?token= 方便後台 <img>/<a> 直接連）
+router.get('/leaves/:id/document', (req, res) => {
+  const t = req.headers['x-admin-token'] || req.query.token;
+  if (t !== process.env.ADMIN_TOKEN) return res.status(401).json({ error: '未授權' });
+  const leave = db.getLeaveById(req.params.id);
+  if (!leave || !leave.documentPath) return res.status(404).json({ error: '查無證明文件' });
+  const filePath = path.join(__dirname, '..', 'data', 'uploads', leave.documentPath);
+  if (!fs.existsSync(filePath)) return res.status(404).json({ error: '檔案不存在' });
+  res.sendFile(filePath);
 });
 
 router.use(auth);

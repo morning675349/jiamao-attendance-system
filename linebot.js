@@ -1,6 +1,10 @@
 const db = require('./db');
 const client = require('./lineClient');
+const fs = require('fs');
+const path = require('path');
 const { getTaipeiTime, isLate, getLateMinutes, WEEKDAYS } = require('./utils');
+
+const UPLOAD_DIR = path.join(__dirname, 'data', 'uploads');
 
 const userStates = {};
 
@@ -15,6 +19,7 @@ async function handleEvent(event) {
   try {
     if (event.type === 'follow') return handleFollow(event, lineId);
     if (event.type === 'message' && event.message.type === 'text') return handleText(event, lineId);
+    if (event.type === 'message' && event.message.type === 'image') return handleImage(event, lineId);
     if (event.type === 'message' && event.message.type === 'location') return handleLocation(event, lineId);
     if (event.type === 'postback') return handlePostback(event, lineId);
   } catch (err) {
@@ -142,18 +147,21 @@ async function handleState(event, lineId, text, employee) {
 
   if (state.step === 'leave_reason') {
     const { type, date } = state.data;
-    const leave = db.createLeave({ lineId, date, type, reason: text });
-    delete userStates[lineId];
-
-    const adminIds = getAdminIds();
-    for (const adminId of adminIds) {
-      client.pushMessage({
-        to: adminId,
-        messages: [makeLeaveNotifyFlex(leave, employee)]
-      }).catch(console.error);
+    // 病假：多問一步是否上傳診斷證明／收據
+    if (type === 'sick') {
+      userStates[lineId] = { step: 'leave_document', data: { type, date, reason: text } };
+      return reply(event.replyToken, `📋 病假申請\n📅 日期：${date}\n📝 原因：${text}\n\n📎 請上傳診斷證明／收據照片（直接拍照或從相簿選圖傳送）。\n\n若無證明，請輸入「略過」\n（病假未附證明將全額扣薪）`);
     }
+    return submitLeave(event, lineId, employee, { type, date, reason: text });
+  }
 
-    return reply(event.replyToken, `📋 請假申請已送出！\n\n👤 ${employee.name}\n假別：${LEAVE_TYPES[type]}\n日期：${date}\n原因：${text}\n\n等待主管審核中...`);
+  // 病假證明步驟：輸入「略過」= 不附證明直接送出；傳圖片則由 handleImage 處理
+  if (state.step === 'leave_document') {
+    if (/略過|跳過|沒有|不用|無/.test(text)) {
+      const { type, date, reason } = state.data;
+      return submitLeave(event, lineId, employee, { type, date, reason });
+    }
+    return reply(event.replyToken, '📎 請直接傳一張證明照片，或輸入「略過」送出（將以無證明計）。');
   }
 
   // ── 加班申請步驟 ──
@@ -239,6 +247,42 @@ async function askLocation(event, lineId, employee, action) {
 }
 
 // ── 實際打卡動作 ─────────────────────────────────────
+// ── 請假送出 + 證明圖片 ─────────────────────────────────
+async function submitLeave(event, lineId, employee, { type, date, reason, documentPath, hasDocument }) {
+  const leave = db.createLeave({ lineId, date, type, reason, documentPath, hasDocument });
+  delete userStates[lineId];
+  for (const adminId of getAdminIds()) {
+    client.pushMessage({ to: adminId, messages: [makeLeaveNotifyFlex(leave, employee)] }).catch(console.error);
+    if (hasDocument) {
+      client.pushMessage({ to: adminId, messages: [{ type: 'text', text: `📎 ${employee.name} 的病假附有證明文件，請至後台「假單審核」查看。` }] }).catch(console.error);
+    }
+  }
+  const docMsg = hasDocument ? '\n📎 已收到證明文件' : (type === 'sick' ? '\n（未附證明，依規定全額扣薪）' : '');
+  return reply(event.replyToken, `📋 請假申請已送出！\n\n👤 ${employee.name}\n假別：${LEAVE_TYPES[type]}\n日期：${date}\n原因：${reason}${docMsg}\n\n等待主管審核中...`);
+}
+
+async function handleImage(event, lineId) {
+  const employee = db.getEmployee(lineId);
+  if (!employee) return;
+  const state = userStates[lineId];
+  if (!state || state.step !== 'leave_document') {
+    return reply(event.replyToken, '📷 已收到圖片。若要附上請假證明，請先輸入「請假」並選擇病假，待系統提示時再上傳。');
+  }
+  try {
+    if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+    const fileName = `${Date.now()}-${lineId.slice(-6)}.jpg`;
+    const stream = await client.blobClient.getMessageContent(event.message.id);
+    const chunks = [];
+    for await (const chunk of stream) chunks.push(chunk);
+    fs.writeFileSync(path.join(UPLOAD_DIR, fileName), Buffer.concat(chunks));
+    const { type, date, reason } = state.data;
+    return submitLeave(event, lineId, employee, { type, date, reason, documentPath: fileName, hasDocument: true });
+  } catch (err) {
+    console.error('下載證明圖片失敗:', err.message);
+    return reply(event.replyToken, '❌ 證明圖片接收失敗，請再傳一次，或輸入「略過」送出。');
+  }
+}
+
 async function doCheckIn(event, lineId, employee, location) {
   if (!employee) return;
   const { date, time } = userStates[lineId]?.data || getTaipeiTime();
