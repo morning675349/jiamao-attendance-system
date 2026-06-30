@@ -111,7 +111,7 @@ router.post('/liff/punch', async (req, res) => {
     });
   } else {
     // ② 超過加班起算時間（預設 17:30）→ 需有當日「已核准」的加班申請才能打下班卡
-    const overtimeStart = companySetting?.overtimeStart || '17:30';
+    const overtimeStart = companySetting?.overtimeStart || process.env.OVERTIME_START || '17:30';
     if (hhmmToMin(time) > hhmmToMin(overtimeStart)) {
       const approvedOT = db.getAllOvertimeRequests().find(
         r => r.lineId === lineId && r.date === date && r.status === 'approved'
