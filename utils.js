@@ -38,6 +38,27 @@ function calcWorkHours(checkIn, checkOut) {
   return Math.round(minutes / 6) / 10;
 }
 
+// 分段工時加總：把當天每個「已閉合」時段（有 in 也有 out）的時數相加，
+// 並扣除每段與午休 12:00~13:00 重疊的部分（午休選項1：中午不打卡、照舊自動扣）。
+// 未閉合（外出中、尚未回來）的時段不計入。
+function calcWorkHoursFromSegments(segments) {
+  if (!Array.isArray(segments) || segments.length === 0) return 0;
+  const lunchStart = 12 * 60, lunchEnd = 13 * 60;
+  let minutes = 0;
+  for (const s of segments) {
+    if (!s || !s.in || !s.out) continue;
+    const [h1, m1] = s.in.split(':').map(Number);
+    const [h2, m2] = s.out.split(':').map(Number);
+    const segStart = h1 * 60 + m1, segEnd = h2 * 60 + m2;
+    let seg = segEnd - segStart;
+    if (seg <= 0) continue;
+    const overlap = Math.min(segEnd, lunchEnd) - Math.max(segStart, lunchStart);
+    if (overlap > 0) seg -= overlap;
+    minutes += seg;
+  }
+  return Math.round(minutes / 6) / 10;
+}
+
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
 
 // 計算特休天數：入職第一年 7 天，之後每年 +1 天
@@ -51,4 +72,4 @@ function calcAnnualLeaveDays(joinDate, override) {
   return 7 + Math.max(0, years);
 }
 
-module.exports = { getTaipeiTime, isLate, getLateMinutes, calcWorkHours, WEEKDAYS, calcAnnualLeaveDays };
+module.exports = { getTaipeiTime, isLate, getLateMinutes, calcWorkHours, calcWorkHoursFromSegments, WEEKDAYS, calcAnnualLeaveDays };

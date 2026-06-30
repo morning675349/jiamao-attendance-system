@@ -248,14 +248,17 @@ async function doCheckIn(event, lineId, employee, location) {
   const result = db.checkIn(lineId, date, time, location, late ? 'late' : 'normal');
   if (result.error) return reply(event.replyToken, `❌ ${result.error}`);
 
-  const lateMsg = late ? `\n⚠️ 今日遲到（規定 ${process.env.WORK_START || '09:00'}）` : '';
+  const isFirst = result._firstCheckIn !== false;   // 首次上班 vs 外出後回來
+  const showLate = isFirst && late;
+  const lateMsg = showLate ? `\n⚠️ 今日遲到（規定 ${process.env.WORK_START || '09:00'}）` : '';
   const gpsMsg = location ? '\n📍 位置已記錄' : '';
-  await reply(event.replyToken, `✅ 上班打卡成功！\n\n👤 ${employee.name}\n📅 ${date}（週${WEEKDAYS[new Date(date).getDay()]}）\n🕐 ${time}${lateMsg}${gpsMsg}`);
+  const title = isFirst ? '✅ 上班打卡成功！' : '✅ 回來上班！';
+  await reply(event.replyToken, `${title}\n\n👤 ${employee.name}\n📅 ${date}（週${WEEKDAYS[new Date(date).getDay()]}）\n🕐 ${time}${lateMsg}${gpsMsg}`);
 
   getAdminIds().forEach(adminId => {
     client.pushMessage({
       to: adminId,
-      messages: [{ type: 'text', text: `📍 打卡通知\n${employee.name} 已上班打卡\n時間：${time}${late ? ' ⚠️遲到' : ''}` }]
+      messages: [{ type: 'text', text: `📍 打卡通知\n${employee.name} ${isFirst ? '已上班打卡' : '回來上班'}\n時間：${time}${showLate ? ' ⚠️遲到' : ''}` }]
     }).catch(console.error);
   });
 }
@@ -269,7 +272,7 @@ async function doCheckOut(event, lineId, employee, location) {
   if (result.error) return reply(event.replyToken, `❌ ${result.error}`);
 
   const gpsMsg = location ? '\n📍 位置已記錄' : '';
-  await reply(event.replyToken, `✅ 下班打卡成功！\n\n👤 ${employee.name}\n📅 ${date}\n🕕 ${time}\n⏱️ 今日工時：${result.workHours} 小時${gpsMsg}`);
+  await reply(event.replyToken, `✅ 下班打卡成功！\n\n👤 ${employee.name}\n📅 ${date}\n🕕 ${time}\n⏱️ 今日累計工時：${result.workHours} 小時${gpsMsg}\n\n（若只是外出，回來請按「上班打卡」）`);
 
   getAdminIds().forEach(adminId => {
     client.pushMessage({

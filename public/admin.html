@@ -769,7 +769,7 @@ async function loadAtt() {
       <td class="px-4 py-2.5 font-medium">${r.employeeName}</td>
       <td class="px-4 py-2.5 text-gray-400 text-xs">${r.department}</td>
       <td class="px-4 py-2.5 text-green-600 font-mono text-xs">${r.checkIn || '--:--'}</td>
-      <td class="px-4 py-2.5 text-yellow-700 font-mono text-xs">${r.checkOut || '--:--'}</td>
+      <td class="px-4 py-2.5 font-mono text-xs">${r.incomplete ? '<span class="text-red-500">⚠️ 未完成</span>' : `<span class="text-yellow-700">${r.checkOut || '--:--'}</span>`}${r.segmentCount > 1 ? `<span class="ml-1 text-[10px] text-blue-500">外出${r.segmentCount - 1}次</span>` : ''}</td>
       <td class="px-4 py-2.5 text-gray-600">${r.workHours != null ? r.workHours + 'h' : '-'}</td>
       <td class="px-4 py-2.5">${badge(r.checkIn, r.status)}</td>
       <td class="px-4 py-2.5 whitespace-nowrap">

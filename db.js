@@ -1,7 +1,18 @@
 const fs = require('fs');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
-const { calcWorkHours } = require('./utils');
+const { calcWorkHours, calcWorkHoursFromSegments } = require('./utils');
+
+// 取得（或由舊資料補出）一筆紀錄的 segments 陣列
+function ensureSegments(rec) {
+  if (Array.isArray(rec.segments)) return rec.segments;
+  // 向下相容：舊資料只有 checkIn/checkOut，補成一個時段
+  rec.segments = rec.checkIn
+    ? [{ in: rec.checkIn, inLat: rec.checkInLat || null, inLng: rec.checkInLng || null,
+         out: rec.checkOut || null, outLat: rec.checkOutLat || null, outLng: rec.checkOutLng || null }]
+    : [];
+  return rec.segments;
+}
 
 const DB_PATH = path.join(__dirname, 'data', 'db.json');
 
@@ -69,21 +80,43 @@ function getAllAttendance() {
 
 function checkIn(lineId, date, time, location, status, lateMinutes) {
   const db = readDb();
-  if (db.attendance.find(a => a.lineId === lineId && a.date === date)) {
-    return { error: '今日已打過上班卡' };
-  }
-  const record = {
-    id: uuidv4(), lineId, date,
-    checkIn: time, checkOut: null,
-    checkInLat: location?.lat || null, checkInLng: location?.lng || null,
-    checkOutLat: null, checkOutLng: null,
-    status: status || 'normal', workHours: null,
-    lateMinutes: lateMinutes || 0,
-    createdAt: new Date().toISOString()
+  const seg = {
+    in: time, inLat: location?.lat || null, inLng: location?.lng || null,
+    out: null, outLat: null, outLng: null
   };
-  db.attendance.push(record);
+  const idx = db.attendance.findIndex(a => a.lineId === lineId && a.date === date);
+
+  // 當天第一次上班 → 建立紀錄
+  if (idx < 0) {
+    const record = {
+      id: uuidv4(), lineId, date,
+      checkIn: time, checkOut: null,
+      checkInLat: location?.lat || null, checkInLng: location?.lng || null,
+      checkOutLat: null, checkOutLng: null,
+      status: status || 'normal', workHours: null,
+      lateMinutes: lateMinutes || 0,
+      segments: [seg],
+      createdAt: new Date().toISOString()
+    };
+    db.attendance.push(record);
+    writeDb(db);
+    return { ...record, _firstCheckIn: true };
+  }
+
+  // 已有當天紀錄 → 外出後回來上班（需先沒有開啟中的時段）
+  const rec = db.attendance[idx];
+  const segments = ensureSegments(rec);
+  const last = segments[segments.length - 1];
+  if (last && !last.out) {
+    return { error: '您目前已是上班狀態，若要外出請按「下班打卡」' };
+  }
+  segments.push(seg);
+  rec.checkOut = null;           // 重新開工，尚未下班
+  rec.checkOutLat = null; rec.checkOutLng = null;
+  rec.workHours = calcWorkHoursFromSegments(segments);
+  db.attendance[idx] = rec;
   writeDb(db);
-  return record;
+  return { ...rec, _firstCheckIn: false };
 }
 
 function updateAttendance(id, updates) {
@@ -127,14 +160,25 @@ function addAttendance({ lineId, date, checkIn, checkOut, status }) {
 function checkOut(lineId, date, time, location) {
   const db = readDb();
   const idx = db.attendance.findIndex(a => a.lineId === lineId && a.date === date);
-  if (idx < 0) return { error: '今日尚未打上班卡' };
-  if (db.attendance[idx].checkOut) return { error: '今日已打過下班卡' };
-  db.attendance[idx].checkOut = time;
-  db.attendance[idx].checkOutLat = location?.lat || null;
-  db.attendance[idx].checkOutLng = location?.lng || null;
-  db.attendance[idx].workHours = calcWorkHours(db.attendance[idx].checkIn, time);
+  if (idx < 0) return { error: '您目前不在上班狀態，請先按「上班打卡」' };
+  const rec = db.attendance[idx];
+  const segments = ensureSegments(rec);
+  const last = segments[segments.length - 1];
+  if (!last || last.out) {
+    return { error: '您目前不在上班狀態，請先按「上班打卡」' };
+  }
+  // 關閉目前開啟中的時段（中途=外出、最後一次=下班）
+  last.out = time;
+  last.outLat = location?.lat || null;
+  last.outLng = location?.lng || null;
+  rec.checkOut = time;                    // 最後一次下班時間
+  rec.checkOutLat = location?.lat || null;
+  rec.checkOutLng = location?.lng || null;
+  rec.workHours = calcWorkHoursFromSegments(segments);
+  db.attendance[idx] = rec;
   writeDb(db);
-  return db.attendance[idx];
+  // segCount 供上層判斷是第一次下班還是外出（>1 段或之前已有閉合段）
+  return { ...rec, _segmentCount: segments.length };
 }
 
 // ── 假單 ──────────────────────────────────────────

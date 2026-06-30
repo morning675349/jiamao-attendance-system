@@ -89,27 +89,49 @@ router.post('/liff/punch', async (req, res) => {
   const location = (lat && lng) ? { lat, lng } : null;
   const companySetting = (db.getCompanies() || []).find(c => c.id === (db.getSalarySettings(lineId) || {}).companyId);
 
+  const todayRec = db.getAllAttendance().find(a => a.lineId === lineId && a.date === date);
+  // 判斷目前是否「上班中」（有開啟未閉合的時段）；相容舊資料
+  const segs = todayRec
+    ? (Array.isArray(todayRec.segments)
+        ? todayRec.segments
+        : (todayRec.checkIn ? [{ in: todayRec.checkIn, out: todayRec.checkOut || null }] : []))
+    : [];
+  const onShift = segs.length > 0 && !segs[segs.length - 1].out;
+
   if (action === 'checkin') {
+    const isFirst = !todayRec;
     const workStart = companySetting?.workStart || process.env.WORK_START || '08:00';
-    // ① 上班卡開放時間 = 上班時間提前 N 分鐘；太早不給打
-    const openMin = hhmmToMin(workStart) - CHECKIN_OPEN_BEFORE_MIN;
-    if (hhmmToMin(time) < openMin) {
-      return res.status(403).json({ error: `⏰ 尚未開放打卡\n上班卡 ${minToHhmm(openMin)} 起才能打（上班時間 ${workStart}）` });
+    // ① 上班卡開放時間 = 上班時間提前 N 分鐘；太早不給打（僅當天第一次上班套用）
+    if (isFirst) {
+      const openMin = hhmmToMin(workStart) - CHECKIN_OPEN_BEFORE_MIN;
+      if (hhmmToMin(time) < openMin) {
+        return res.status(403).json({ error: `⏰ 尚未開放打卡\n上班卡 ${minToHhmm(openMin)} 起才能打（上班時間 ${workStart}）` });
+      }
     }
-    const late = isLate(time, workStart);
-    const lateMinutes = getLateMinutes(time, workStart);
+    const late = isFirst && isLate(time, workStart);
+    const lateMinutes = isFirst ? getLateMinutes(time, workStart) : 0;
     const result = db.checkIn(lineId, date, time, location, late ? 'late' : 'normal', lateMinutes);
-    console.log(`[liff/punch] checkIn result:`, JSON.stringify(result));
+    console.log(`[liff/punch] checkIn result:`, JSON.stringify({ first: result._firstCheckIn, error: result.error }));
     if (result.error) return res.status(400).json({ error: result.error });
-    const note = late ? `⚠️ 遲到（規定 ${process.env.WORK_START || '09:00'}）` : '';
-    res.json({ time, status: result.status, note });
+
+    if (result._firstCheckIn) {
+      const note = late ? `⚠️ 遲到（規定 ${workStart}）` : '';
+      res.json({ time, status: result.status, note });
+    } else {
+      res.json({ time, title: '回來上班！', note: '已繼續計時，外出時間不計入工時' });
+    }
+    const tag = result._firstCheckIn ? '上班打卡' : '回來上班';
     db.getAllEmployees().filter(e => e.role === 'admin').forEach(admin => {
       client.pushMessage({
         to: admin.lineId,
-        messages: [{ type: 'text', text: `📍 打卡通知\n${employee.name} 上班打卡\n時間：${time}${late ? ' ⚠️遲到' : ''}${location ? '\n📍 GPS 已記錄' : ''}` }]
+        messages: [{ type: 'text', text: `📍 打卡通知\n${employee.name} ${tag}\n時間：${time}${late ? ' ⚠️遲到' : ''}${location ? '\n📍 GPS 已記錄' : ''}` }]
       }).catch(console.error);
     });
   } else {
+    // 不在上班狀態 → 不能打下班/外出卡
+    if (!onShift) {
+      return res.status(400).json({ error: '您目前不在上班狀態，請先按「上班打卡」' });
+    }
     // ② 超過加班起算時間（預設 17:30）→ 需有當日「已核准」的加班申請才能打下班卡
     const overtimeStart = companySetting?.overtimeStart || process.env.OVERTIME_START || '17:30';
     if (hhmmToMin(time) > hhmmToMin(overtimeStart)) {
@@ -122,11 +144,11 @@ router.post('/liff/punch', async (req, res) => {
     }
     const result = db.checkOut(lineId, date, time, location);
     if (result.error) return res.status(400).json({ error: result.error });
-    res.json({ time, workHours: result.workHours, note: '' });
+    res.json({ time, workHours: result.workHours, note: '若只是外出，回來請再按「上班打卡」' });
     db.getAllEmployees().filter(e => e.role === 'admin').forEach(admin => {
       client.pushMessage({
         to: admin.lineId,
-        messages: [{ type: 'text', text: `📍 打卡通知\n${employee.name} 下班打卡\n時間：${time}\n⏱️ 今日工時：${result.workHours} 小時${location ? '\n📍 GPS 已記錄' : ''}` }]
+        messages: [{ type: 'text', text: `📍 打卡通知\n${employee.name} 下班/外出打卡\n時間：${time}\n⏱️ 今日累計工時：${result.workHours} 小時${location ? '\n📍 GPS 已記錄' : ''}` }]
       }).catch(console.error);
     });
   }
@@ -201,7 +223,12 @@ router.get('/attendance', (req, res) => {
 
   records = records.map(r => {
     const emp = employees.find(e => e.lineId === r.lineId);
-    return { ...r, employeeName: emp?.name || '未知', department: emp?.department || '' };
+    const segCount = Array.isArray(r.segments) ? r.segments.length : (r.checkIn ? 1 : 0);
+    // 未完成打卡：有開啟中、尚未閉合的時段（外出沒回來就走人）
+    const incomplete = Array.isArray(r.segments)
+      ? r.segments.some(s => s.in && !s.out)
+      : (!!r.checkIn && !r.checkOut);
+    return { ...r, employeeName: emp?.name || '未知', department: emp?.department || '', segmentCount: segCount, incomplete };
   });
 
   res.json(records.sort((a, b) => b.date.localeCompare(a.date)));

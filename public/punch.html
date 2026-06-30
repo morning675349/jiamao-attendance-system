@@ -314,7 +314,7 @@ async function submit() {
     if (!res.ok) throw new Error(data.error || `打卡失敗 (${res.status})`);
 
     document.getElementById('success-title').textContent =
-      isCheckin ? '上班打卡成功！' : '下班打卡成功！';
+      data.title || (isCheckin ? '上班打卡成功！' : '下班打卡成功！');
     document.getElementById('success-time').textContent = `時間：${data.time}`;
     if (data.note) document.getElementById('success-note').textContent = data.note;
     show('success');
