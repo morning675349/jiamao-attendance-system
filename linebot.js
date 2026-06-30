@@ -119,6 +119,38 @@ async function handlePostback(event, lineId) {
     return reply(event.replyToken, `📋 假別：${LEAVE_TYPES[type]}\n📅 日期：${date}\n\n請輸入請假原因：`);
   }
 
+  // ── 加班申請（全程用選的）──
+  if (action === 'ot_date') {
+    const date = p.get('date');
+    userStates[lineId] = { step: 'ot_picking', data: { date } };
+    return client.replyMessage({ replyToken: event.replyToken, messages: [makeOtTimePicker('start', '17:30')] });
+  }
+  if (action === 'ot_start') {
+    const time = event.postback.params?.time;
+    const st = userStates[lineId];
+    if (!time || !st?.data) return;
+    st.data.startTime = time;
+    return client.replyMessage({ replyToken: event.replyToken, messages: [makeOtTimePicker('end', time)] });
+  }
+  if (action === 'ot_end') {
+    const time = event.postback.params?.time;
+    const st = userStates[lineId];
+    if (!time || !st?.data?.startTime) return;
+    const [sh, sm] = st.data.startTime.split(':').map(Number);
+    const [eh, em] = time.split(':').map(Number);
+    let hours = ((eh * 60 + em) - (sh * 60 + sm)) / 60;
+    if (hours <= 0) return reply(event.replyToken, '結束時間需晚於開始時間，請重新選擇結束時間。');
+    hours = Math.round(hours * 10) / 10;
+    userStates[lineId] = { step: 'ot_reason', data: { ...st.data, endTime: time, hours } };
+    return client.replyMessage({ replyToken: event.replyToken, messages: [makeOtReasonPicker(st.data.date, st.data.startTime, time, hours)] });
+  }
+  if (action === 'ot_reason') {
+    const reason = p.get('reason');
+    const st = userStates[lineId];
+    if (!st?.data?.date) return;
+    return submitOvertimeRequest(event, lineId, employee, { ...st.data, reason });
+  }
+
   if (action === 'review_leave') {
     if (employee.role !== 'admin') return reply(event.replyToken, '僅管理員可審核');
     const id = p.get('id');
@@ -189,50 +221,14 @@ async function handleState(event, lineId, text, employee) {
     return reply(event.replyToken, '📎 請直接傳一張證明照片，或輸入「略過」送出（將以無證明計）。');
   }
 
-  // ── 加班申請步驟 ──
-  if (state.step === 'ot_date') {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) {
-      return reply(event.replyToken, '日期格式錯誤，請輸入 YYYY-MM-DD\n例如：2026-05-25');
-    }
-    userStates[lineId] = { step: 'ot_start', data: { date: text } };
-    return reply(event.replyToken, `📅 加班日期：${text}\n\n請輸入加班開始時間（格式 HH:MM）\n例如：17:30`);
+  // ── 加班申請：日期/時間用按鈕選（見 postback）；原因可打字 ──
+  if (state.step === 'ot_picking') {
+    if (text === '取消') { delete userStates[lineId]; return reply(event.replyToken, '已取消加班申請'); }
+    return reply(event.replyToken, '請用訊息中的按鈕選擇日期與時間 🙂\n（輸入「取消」可退出）');
   }
-
-  if (state.step === 'ot_start') {
-    if (!/^\d{2}:\d{2}$/.test(text)) {
-      return reply(event.replyToken, '時間格式錯誤，請輸入 HH:MM\n例如：17:30');
-    }
-    userStates[lineId] = { step: 'ot_end', data: { ...state.data, startTime: text } };
-    return reply(event.replyToken, `開始時間：${text}\n\n請輸入加班結束時間（格式 HH:MM）\n例如：20:00`);
-  }
-
-  if (state.step === 'ot_end') {
-    if (!/^\d{2}:\d{2}$/.test(text)) {
-      return reply(event.replyToken, '時間格式錯誤，請輸入 HH:MM\n例如：20:00');
-    }
-    const { date, startTime } = state.data;
-    const [sh, sm] = startTime.split(':').map(Number);
-    const [eh, em] = text.split(':').map(Number);
-    const hours = Math.round(((eh * 60 + em) - (sh * 60 + sm)) / 6) / 10;
-    if (hours <= 0) {
-      return reply(event.replyToken, '結束時間必須晚於開始時間，請重新輸入：');
-    }
-    userStates[lineId] = { step: 'ot_reason', data: { ...state.data, endTime: text, hours } };
-    return reply(event.replyToken, `時段：${startTime}～${text}（${hours}H）\n\n請輸入加班原因：`);
-  }
-
   if (state.step === 'ot_reason') {
-    const { date, startTime, endTime, hours } = state.data;
-    const req = db.createOvertimeRequest({ lineId, date, startTime, endTime, hours, reason: text });
-    delete userStates[lineId];
-    const adminIds = getAdminIds();
-    for (const adminId of adminIds) {
-      client.pushMessage({
-        to: adminId,
-        messages: [{ type: 'text', text: `⏰ 加班申請\n\n姓名：${employee.name}\n日期：${date}\n時段：${startTime}～${endTime}（${hours}H）\n原因：${text}\n\n請至後台「薪資系統 > 加班申請」審核` }]
-      }).catch(console.error);
-    }
-    return reply(event.replyToken, `✅ 加班申請已送出！\n\n姓名：${employee.name}\n日期：${date}\n時段：${startTime}～${endTime}（${hours}H）\n原因：${text}\n\n等待主管審核，結果會透過 LINE 通知您。`);
+    if (text === '取消') { delete userStates[lineId]; return reply(event.replyToken, '已取消加班申請'); }
+    return submitOvertimeRequest(event, lineId, employee, { ...state.data, reason: text });
   }
 
   delete userStates[lineId];
@@ -609,9 +605,75 @@ function reply(replyToken, text) {
 
 // ── 加班申請啟動 ─────────────────────────────────────────
 function startOvertimeRequest(event, lineId) {
+  userStates[lineId] = { step: 'ot_picking', data: {} };
+  return client.replyMessage({ replyToken: event.replyToken, messages: [makeOtDatePicker()] });
+}
+
+function makeOtDatePicker() {
   const { date } = getTaipeiTime();
-  userStates[lineId] = { step: 'ot_date', data: {} };
-  return reply(event.replyToken, `⏰ 加班申請\n\n請輸入加班日期（格式 YYYY-MM-DD）\n今天：${date}\n\n輸入「取消」可隨時退出`);
+  const addDays = (d, n) => { const dt = new Date(d); dt.setDate(dt.getDate() + n); return dt.toISOString().slice(0, 10); };
+  const dates = [
+    { label: `今天  ${date}`, date },
+    { label: `明天  ${addDays(date, 1)}`, date: addDays(date, 1) },
+    { label: `後天  ${addDays(date, 2)}`, date: addDays(date, 2) },
+  ];
+  return {
+    type: 'flex', altText: '加班申請：請選擇日期',
+    contents: { type: 'bubble',
+      header: { type: 'box', layout: 'vertical', backgroundColor: '#F59E0B', paddingAll: 'lg',
+        contents: [
+          { type: 'text', text: '⏰ 加班申請', color: '#ffffff', weight: 'bold', size: 'md' },
+          { type: 'text', text: '步驟 1／3：選擇加班日期', color: '#ffffff', size: 'sm', margin: 'sm' },
+        ] },
+      body: { type: 'box', layout: 'vertical', spacing: 'sm', paddingAll: 'md',
+        contents: dates.map(d => ({ type: 'button', style: 'secondary', height: 'sm',
+          action: { type: 'postback', label: d.label, data: `action=ot_date&date=${d.date}`, displayText: `加班日期：${d.date}` } })) }
+    }
+  };
+}
+
+function makeOtTimePicker(which, initial) {
+  const isStart = which === 'start';
+  return {
+    type: 'flex', altText: isStart ? '選擇加班開始時間' : '選擇加班結束時間',
+    contents: { type: 'bubble',
+      body: { type: 'box', layout: 'vertical', spacing: 'md', paddingAll: 'lg',
+        contents: [
+          { type: 'text', text: isStart ? '步驟 2／3：加班開始時間' : '步驟 3／3：加班結束時間', weight: 'bold', size: 'sm', color: '#555555' },
+          { type: 'button', style: 'primary', color: '#F59E0B', height: 'sm',
+            action: { type: 'datetimepicker', label: isStart ? '🕐 選擇開始時間' : '🕐 選擇結束時間',
+                      data: isStart ? 'action=ot_start' : 'action=ot_end', mode: 'time', initial, min: '00:00', max: '23:59' } },
+        ] }
+    }
+  };
+}
+
+function makeOtReasonPicker(date, startTime, endTime, hours) {
+  const reasons = ['趕工出貨', '生產排程', '設備維修', '盤點', '臨時任務'];
+  return {
+    type: 'flex', altText: '請選擇加班原因',
+    contents: { type: 'bubble',
+      header: { type: 'box', layout: 'vertical', backgroundColor: '#F59E0B', paddingAll: 'md',
+        contents: [{ type: 'text', text: `⏰ ${date}　${startTime}–${endTime}（${hours}H）`, color: '#ffffff', size: 'sm', weight: 'bold', wrap: true }] },
+      body: { type: 'box', layout: 'vertical', spacing: 'sm', paddingAll: 'md',
+        contents: [
+          { type: 'text', text: '步驟 3／3：選擇加班原因', size: 'sm', color: '#555555' },
+          ...reasons.map(r => ({ type: 'button', style: 'secondary', height: 'sm',
+            action: { type: 'postback', label: r, data: `action=ot_reason&reason=${encodeURIComponent(r)}`, displayText: `加班原因：${r}` } })),
+          { type: 'separator', margin: 'md' },
+          { type: 'text', text: '或直接輸入自訂原因', size: 'xs', color: '#999999', align: 'center', margin: 'sm' },
+        ] }
+    }
+  };
+}
+
+async function submitOvertimeRequest(event, lineId, employee, { date, startTime, endTime, hours, reason }) {
+  db.createOvertimeRequest({ lineId, date, startTime, endTime, hours, reason });
+  delete userStates[lineId];
+  for (const adminId of getAdminIds()) {
+    client.pushMessage({ to: adminId, messages: [{ type: 'text', text: `⏰ 加班申請\n\n姓名：${employee.name}\n日期：${date}\n時段：${startTime}～${endTime}（${hours}H）\n原因：${reason}\n\n請至後台「薪資系統 > 加班申請」審核` }] }).catch(console.error);
+  }
+  return reply(event.replyToken, `✅ 加班申請已送出！\n\n姓名：${employee.name}\n日期：${date}\n時段：${startTime}～${endTime}（${hours}H）\n原因：${reason}\n\n等待主管審核，結果會透過 LINE 通知您。`);
 }
 
 // ── 查薪資 ────────────────────────────────────────────
