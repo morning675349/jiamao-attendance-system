@@ -1151,7 +1151,7 @@ async function loadPunchReqs(status) {
 
   const reqs = await api('/punch-requests?status=' + status);
   const tbody = document.getElementById('pr-table');
-  const typeLabel = { checkin: '補打上班卡', checkout: '補打下班卡' };
+  const typeLabel = { checkin: '補打上班卡', checkout: '補打下班卡', ot_checkin: '補打加班上班卡', ot_checkout: '補打加班下班卡' };
   const statusLabel = { pending: '待審核', approved: '已核准', rejected: '已駁回' };
 
   if (!reqs.length) {
@@ -1165,7 +1165,7 @@ async function loadPunchReqs(status) {
       <td class="px-4 py-2.5 font-medium">${r.employeeName}</td>
       <td class="px-4 py-2.5 text-gray-400 text-xs">${r.department}</td>
       <td class="px-4 py-2.5">
-        <span class="px-2 py-0.5 rounded text-xs font-medium ${r.type === 'checkin' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-blue-700'}">
+        <span class="px-2 py-0.5 rounded text-xs font-medium ${(r.type === 'checkin' || r.type === 'ot_checkin') ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}">
           ${typeLabel[r.type] || r.type}
         </span>
       </td>

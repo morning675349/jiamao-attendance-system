@@ -8,6 +8,7 @@ const client = require('../lineClient');
 const { getTaipeiTime, calcAnnualLeaveDays, isLate, getLateMinutes } = require('../utils');
 
 const LEAVE_TYPES = { annual: '特休假', sick: '病假', personal: '事假', other: '其他假別' };
+const PUNCH_REQ_LABELS = { checkin: '上班', checkout: '下班', ot_checkin: '加班上班', ot_checkout: '加班下班' };
 
 // 上班卡提前開放分鐘數（例：上班 08:00 → 07:55 起開放打卡）
 const CHECKIN_OPEN_BEFORE_MIN = 5;
@@ -185,7 +186,7 @@ router.post('/liff/punch-request', async (req, res) => {
 
   const request = db.createPunchRequest({ lineId, date, type, requestedTime, reason: reason.trim() });
 
-  const typeText = type === 'checkin' ? '上班' : '下班';
+  const typeText = PUNCH_REQ_LABELS[type] || '打卡';
   db.getAllEmployees().filter(e => e.role === 'admin').forEach(admin => {
     client.pushMessage({
       to: admin.lineId,
@@ -397,25 +398,13 @@ router.put('/punch-requests/:id/review', async (req, res) => {
   if (!request) return res.status(404).json({ error: '申請不存在' });
 
   if (status === 'approved') {
-    const { lineId, date, type, requestedTime } = request;
-    const existing = db.getAllAttendance().find(a => a.lineId === lineId && a.date === date);
-    if (type === 'checkin') {
-      if (existing) {
-        db.updateAttendance(existing.id, { checkIn: requestedTime });
-      } else {
-        db.addAttendance({ lineId, date, checkIn: requestedTime, status: 'normal' });
-      }
-    } else if (type === 'checkout') {
-      if (existing) {
-        db.updateAttendance(existing.id, { checkOut: requestedTime });
-      } else {
-        db.addAttendance({ lineId, date, checkOut: requestedTime, status: 'normal' });
-      }
-    }
+    const { lineId, date, requestedTime } = request;
+    // 補卡：把時間點插進當天序列、自動重排配對成時段（適用四種補卡類型）
+    db.addMakeupPunch(lineId, date, requestedTime);
   }
 
   const emp = db.getEmployee(request.lineId);
-  const typeText = request.type === 'checkin' ? '上班' : '下班';
+  const typeText = PUNCH_REQ_LABELS[request.type] || '打卡';
   const statusText = status === 'approved' ? '✅ 已核准' : '❌ 已駁回';
   client.pushMessage({
     to: request.lineId,

@@ -94,8 +94,10 @@
         <label class="text-xs text-gray-500 mb-1 block">補打類型</label>
         <select id="forgot-type" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
           onchange="onForgotTypeChange()">
-          <option value="checkin">上班打卡（08:30～09:00）</option>
-          <option value="checkout">下班打卡（17:30～18:00）</option>
+          <option value="checkin">補上班打卡（08:00）</option>
+          <option value="checkout">補下班打卡（17:00）</option>
+          <option value="ot_checkin">補打加班上班卡（17:30）</option>
+          <option value="ot_checkout">補打加班下班卡（不限）</option>
         </select>
       </div>
       <div>
@@ -338,20 +340,23 @@ function openForgot() {
   // action=forgot → default to checkin; action=checkout → checkout; otherwise checkin
   const forgotType = (action === 'checkout') ? 'checkout' : 'checkin';
   document.getElementById('forgot-type').value = forgotType;
-  document.getElementById('forgot-time').value = forgotType === 'checkout' ? '18:00' : '09:00';
   document.getElementById('forgot-reason').value = '';
   onForgotTypeChange();
   show('forgot');
 }
 
+const FORGOT_DEFAULTS = {
+  checkin:     { time: '08:00', hint: '正常上班時間 08:00（超過視為遲到）' },
+  checkout:    { time: '17:00', hint: '正常下班時間 17:00' },
+  ot_checkin:  { time: '17:30', hint: '加班起算 17:30（加班費需另提加班申請）' },
+  ot_checkout: { time: '',      hint: '加班結束時間不限，請填寫實際下班時間' }
+};
+
 function onForgotTypeChange() {
   const type = document.getElementById('forgot-type').value;
-  const hint = document.getElementById('forgot-time-hint');
-  if (type === 'checkin') {
-    hint.textContent = '上班時間 08:30～09:00，超過 09:00 將視為遲到';
-  } else {
-    hint.textContent = '下班時間 17:30～18:00';
-  }
+  const d = FORGOT_DEFAULTS[type] || FORGOT_DEFAULTS.checkin;
+  document.getElementById('forgot-time').value = d.time;
+  document.getElementById('forgot-time-hint').textContent = d.hint;
 }
 
 async function submitForgot() {

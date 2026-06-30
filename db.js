@@ -181,6 +181,50 @@ function checkOut(lineId, date, time, location) {
   return { ...rec, _segmentCount: segments.length };
 }
 
+// 補打卡：把一個時間點插進當天打卡序列，依時間重新排序、兩兩配對成時段
+// （第1=進、第2=出、第3=進…；類型只影響表單預設與通知，實際只是插入一個時間）
+function addMakeupPunch(lineId, date, time) {
+  const db = readDb();
+  let rec = db.attendance.find(a => a.lineId === lineId && a.date === date);
+  const times = [];
+  const coord = {};
+  if (rec) {
+    ensureSegments(rec).forEach(s => {
+      if (s.in)  { times.push(s.in);  if (s.inLat)  coord[s.in]  = { lat: s.inLat,  lng: s.inLng }; }
+      if (s.out) { times.push(s.out); if (s.outLat) coord[s.out] = { lat: s.outLat, lng: s.outLng }; }
+    });
+  }
+  times.push(time);
+  const sorted = [...new Set(times)].sort();
+  const segments = [];
+  for (let i = 0; i < sorted.length; i += 2) {
+    const a = sorted[i], b = sorted[i + 1] || null;
+    segments.push({
+      in: a,  inLat: coord[a]?.lat || null,  inLng: coord[a]?.lng || null,
+      out: b, outLat: b ? (coord[b]?.lat || null) : null, outLng: b ? (coord[b]?.lng || null) : null
+    });
+  }
+  const lastClosed = [...segments].reverse().find(s => s.out);
+  const patch = {
+    segments,
+    checkIn:  segments[0]?.in  || null,  checkInLat:  segments[0]?.inLat  || null, checkInLng:  segments[0]?.inLng  || null,
+    checkOut: lastClosed?.out  || null,  checkOutLat: lastClosed?.outLat || null, checkOutLng: lastClosed?.outLng || null,
+    workHours: calcWorkHoursFromSegments(segments)
+  };
+  if (rec) {
+    Object.assign(rec, patch);
+  } else {
+    rec = {
+      id: uuidv4(), lineId, date, ...patch,
+      status: 'normal', lateMinutes: 0,
+      createdAt: new Date().toISOString(), manualEntry: true
+    };
+    db.attendance.push(rec);
+  }
+  writeDb(db);
+  return rec;
+}
+
 // ── 假單 ──────────────────────────────────────────
 function getAllLeaves() {
   return readDb().leaves;
@@ -438,7 +482,7 @@ function deletePayroll(id) {
 
 module.exports = {
   getEmployee, getAllEmployees, createEmployee, updateEmployee, deleteEmployee,
-  getTodayRecord, getAllAttendance, checkIn, checkOut,
+  getTodayRecord, getAllAttendance, checkIn, checkOut, addMakeupPunch,
   updateAttendance, deleteAttendance, addAttendance,
   getAllLeaves, getLeavesByEmployee, createLeave, reviewLeave, getLeaveById,
   getAllPunchRequests, createPunchRequest, reviewPunchRequest,
