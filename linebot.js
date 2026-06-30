@@ -169,10 +169,13 @@ async function handleState(event, lineId, text, employee) {
 
   if (state.step === 'leave_reason') {
     const { type, date } = state.data;
-    // 病假：多問一步是否上傳診斷證明／收據
-    if (type === 'sick') {
+    // 病假、其他假別：多問一步是否上傳證明文件
+    if (type === 'sick' || type === 'other') {
       userStates[lineId] = { step: 'leave_document', data: { type, date, reason: text } };
-      return reply(event.replyToken, `📋 病假申請\n📅 日期：${date}\n📝 原因：${text}\n\n📎 請上傳診斷證明／收據照片（直接拍照或從相簿選圖傳送）。\n\n若無證明，請輸入「略過」\n（病假未附證明將全額扣薪）`);
+      const note = type === 'sick'
+        ? '\n\n若無證明，請輸入「略過」\n（病假未附證明將全額扣薪）'
+        : '\n\n若無證明文件，請輸入「略過」';
+      return reply(event.replyToken, `📋 ${LEAVE_TYPES[type]}申請\n📅 日期：${date}\n📝 原因：${text}\n\n📎 請上傳相關證明文件照片（直接拍照或從相簿選圖傳送）。${note}`);
     }
     return submitLeave(event, lineId, employee, { type, date, reason: text });
   }
@@ -276,7 +279,7 @@ async function submitLeave(event, lineId, employee, { type, date, reason, docume
   for (const adminId of getAdminIds()) {
     client.pushMessage({ to: adminId, messages: [makeLeaveNotifyFlex(leave, employee)] }).catch(console.error);
     if (hasDocument) {
-      client.pushMessage({ to: adminId, messages: [{ type: 'text', text: `📎 ${employee.name} 的病假附有證明文件，請至後台「假單審核」查看。` }] }).catch(console.error);
+      client.pushMessage({ to: adminId, messages: [{ type: 'text', text: `📎 ${employee.name} 的${LEAVE_TYPES[type]}附有證明文件，請至後台「假單審核」查看。` }] }).catch(console.error);
     }
   }
   const docMsg = hasDocument ? '\n📎 已收到證明文件' : (type === 'sick' ? '\n（未附證明，依規定全額扣薪）' : '');
