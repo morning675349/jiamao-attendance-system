@@ -51,6 +51,14 @@
         </div>
         <p id="gps-coords" class="text-xs font-mono text-gray-500 bg-gray-50 rounded-lg px-3 py-2">定位中...</p>
       </div>
+      <div id="meal-toggle" class="hidden">
+        <p id="meal-question" class="text-sm text-gray-600 font-medium mb-2">今天中午要用餐嗎？</p>
+        <div class="flex gap-2">
+          <button type="button" id="meal-yes" onclick="setMeal(true)" class="flex-1 py-2.5 rounded-lg text-sm font-medium border border-gray-200 transition">要用餐</button>
+          <button type="button" id="meal-no" onclick="setMeal(false)" class="flex-1 py-2.5 rounded-lg text-sm font-medium border border-gray-200 transition">不用餐</button>
+        </div>
+        <p id="meal-hint" class="text-xs text-gray-400 mt-1"></p>
+      </div>
       <div id="fence-warning" class="hidden bg-amber-50 border border-amber-200 rounded-xl p-3">
         <p class="text-amber-700 text-sm font-medium">⚠️ 不在打卡範圍內</p>
         <p id="fence-detail" class="text-amber-600 text-xs mt-0.5"></p>
@@ -170,6 +178,26 @@ const LIFF_ID = '{{LIFF_ID}}';
 // Declared at module level; set inside init() AFTER liff.init() restores original query params
 let action = 'checkin';
 let isCheckin = true;
+let mealEat = true;      // 預設要用餐
+let mealKind = null;     // 'lunch' | 'ot' | null
+
+function setMeal(eat) {
+  mealEat = eat;
+  const on = 'bg-green-500 text-white border-green-500', off = 'border-gray-200 text-gray-600';
+  document.getElementById('meal-yes').className = `flex-1 py-2.5 rounded-lg text-sm font-medium border transition ${eat ? on : off}`;
+  document.getElementById('meal-no').className = `flex-1 py-2.5 rounded-lg text-sm font-medium border transition ${!eat ? on : off}`;
+  document.getElementById('meal-hint').textContent = eat ? '公司供餐，不另發津貼' : '不供餐，符合條件補 80 元伙食津貼';
+}
+
+function setupMealToggle() {
+  const hour = Number(new Date().toLocaleTimeString('en-GB', { timeZone: 'Asia/Taipei', hour12: false }).slice(0, 2));
+  if (hour < 14) { mealKind = 'lunch'; document.getElementById('meal-question').textContent = '今天中午要用餐嗎？'; }
+  else if (hour >= 17) { mealKind = 'ot'; document.getElementById('meal-question').textContent = '加班要用餐嗎？'; }
+  else { mealKind = null; }
+  const box = document.getElementById('meal-toggle');
+  if (mealKind) { box.classList.remove('hidden'); setMeal(true); }
+  else { box.classList.add('hidden'); }
+}
 let coords = null;
 let accessToken = null;
 let blocked = false;
@@ -242,6 +270,7 @@ async function init() {
       document.getElementById('header-icon').textContent = '☀️';
       document.getElementById('header-title').textContent = '上班打卡';
       btn.textContent = '確認上班打卡';
+      setupMealToggle();
     } else {
       bar.style.background = 'linear-gradient(135deg, #2563EB, #1D4ED8)';
       btn.style.background = 'linear-gradient(135deg, #2563EB, #1D4ED8)';
@@ -309,7 +338,7 @@ async function submit() {
     const res = await fetch('/api/liff/punch', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ accessToken, action, lat: coords?.lat, lng: coords?.lng })
+      body: JSON.stringify({ accessToken, action, lat: coords?.lat, lng: coords?.lng, mealEat, mealKind })
     });
     let data;
     try { data = await res.json(); } catch(e) { throw new Error(`伺服器錯誤 HTTP ${res.status}`); }

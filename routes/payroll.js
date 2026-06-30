@@ -190,14 +190,26 @@ router.post('/payrolls/:id/notify', async (req, res) => {
   const company = companies.find(c => c.id === p.companyId);
   const monthLabel = `${p.year}年${p.month}月`;
 
+  const incLabels = { baseSalary:'底薪', jobAllowance:'職務加給', perfectAttendance:'全勤獎金', mealAllowance:'伙食津貼', overtimeMealAllowance:'加班伙食津貼', overtimePay:'加班費', transportAllowance:'交通費', phoneAllowance:'電話費', businessTripFuel:'出差油資', quarterBonus:'季獎金', performanceBonus:'績效獎金', supportAllowance:'支援其他部門津貼', driverAllowance:'駕駛津貼', skillAllowance:'技能津貼', holidayGift:'節日禮金', otherAllowance:'其他津貼' };
+  const dedLabels = { laborInsurance:'勞保費', healthInsurance:'健保費', lateDeduction:'遲到扣款', leaveDeduction:'假別扣款' };
+  const incLines = Object.entries(p.income || {}).filter(([, v]) => v).map(([k, v]) => `　${incLabels[k] || k}：$${Number(v).toLocaleString()}`);
+  const dedLines = Object.entries(p.deductions || {}).filter(([, v]) => v).map(([k, v]) => `　${dedLabels[k] || k}：$${Number(v).toLocaleString()}`);
+
   const msg = [
     `💰 ${monthLabel}薪資單已發放`,
     `公司：${company?.name || p.companyId}`,
-    `應付合計：$${p.totalIncome?.toLocaleString()}`,
-    `應扣合計：$${p.totalDeductions?.toLocaleString()}`,
+    '',
+    '【應付項目】',
+    ...incLines,
+    `　應付合計：$${p.totalIncome?.toLocaleString()}`,
+    '',
+    '【應扣項目】',
+    ...dedLines,
+    `　應扣合計：$${p.totalDeductions?.toLocaleString()}`,
+    '',
     `✅ 實領薪資：$${p.netSalary?.toLocaleString()}`,
-    p.notes ? `備注：${p.notes}` : '',
-    '\n如有疑問請洽管理員',
+    p.notes ? `\n備注：${p.notes}` : '',
+    '\n如有疑問請洽會計人員',
   ].filter(Boolean).join('\n');
 
   try {

@@ -73,7 +73,7 @@ function auth(req, res, next) {
 
 // ── 公開端點（LIFF 頁面使用，不需 admin token）──────────
 router.post('/liff/punch', async (req, res) => {
-  const { accessToken, action, lat, lng } = req.body || {};
+  const { accessToken, action, lat, lng, mealEat, mealKind } = req.body || {};
   console.log(`[liff/punch] action=${action} hasToken=${!!accessToken} lat=${lat} lng=${lng}`);
   if (!accessToken) return res.status(400).json({ error: '缺少 accessToken，請關閉後重新從 LINE 開啟' });
 
@@ -131,6 +131,11 @@ router.post('/liff/punch', async (req, res) => {
     const result = db.checkIn(lineId, date, time, location, late ? 'late' : 'normal', lateMinutes);
     console.log(`[liff/punch] checkIn result:`, JSON.stringify({ first: result._firstCheckIn, error: result.error }));
     if (result.error) return res.status(400).json({ error: result.error });
+
+    // 記錄用餐選擇（mealKind: 'lunch'=中午, 'ot'=加班；mealEat: 是否用餐）
+    if (mealKind === 'lunch' || mealKind === 'ot') {
+      db.setAttendanceMeal(lineId, date, mealKind, mealEat);
+    }
 
     if (result._firstCheckIn) {
       const note = late ? `⚠️ 遲到（規定 ${workStart}）` : '';

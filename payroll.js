@@ -91,14 +91,31 @@ function calcLeaveDeduction(baseSalary, leaves) {
   return Math.round(total);
 }
 
-// 伙食津貼：出勤天 × 80元
-function calcMealAllowance(attendanceDays) {
-  return (attendanceDays || 0) * 80;
+// 伙食津貼：當天「不用餐」且「遲到 ≤ 60 分」→ 80元（未選視為用餐，不補）
+function calcMealAllowance(attendance) {
+  return (attendance || []).reduce((sum, a) => {
+    if (!a.checkIn) return sum;                          // 沒上班不算
+    const ate = a.lunchMeal !== false;                  // 未設或 true 視為用餐
+    const lateOver1hr = (Number(a.lateMinutes) || 0) > 60;
+    return sum + ((!ate && !lateOver1hr) ? 80 : 0);
+  }, 0);
 }
 
-// 加班伙食津貼：加班 >= 2hr 的場次每次 80元
-function calcOvertimeMealAllowance(sessions) {
-  return sessions.filter(s => Number(s.hours) >= 2).length * 80;
+// 加班伙食津貼：當天核准加班 ≥ 2hr 且「加班不用餐」→ 80元（每日一次）
+function calcOvertimeMealAllowance(approvedOT, attendance) {
+  const otByDate = {};
+  (approvedOT || []).forEach(o => { otByDate[o.date] = (otByDate[o.date] || 0) + (Number(o.hours) || 0); });
+  const attByDate = {};
+  (attendance || []).forEach(a => { attByDate[a.date] = a; });
+  let total = 0;
+  for (const date in otByDate) {
+    if (otByDate[date] >= 2) {
+      const a = attByDate[date];
+      const ate = a ? (a.otMeal !== false) : true;      // 未設視為用餐
+      if (!ate) total += 80;
+    }
+  }
+  return total;
 }
 
 // 月薪資自動計算（草稿，admin可再手動調整）
@@ -116,8 +133,8 @@ function generatePayroll({ salarySettings, attendance, approvedLeaves, approvedO
     baseSalary,
     jobAllowance:        Number(s.jobAllowance) || 0,
     perfectAttendance:   Number(s.perfectAttendance) || 0,
-    mealAllowance:       calcMealAllowance(attendanceDays),
-    overtimeMealAllowance: calcOvertimeMealAllowance(approvedOT),
+    mealAllowance:       calcMealAllowance(attendance),
+    overtimeMealAllowance: calcOvertimeMealAllowance(approvedOT, attendance),
     overtimePay:         calcOvertimePay(baseSalary, approvedOT),
     transportAllowance:  Number(s.transportAllowance) || 0,
     phoneAllowance:      Number(s.phoneAllowance) || 0,

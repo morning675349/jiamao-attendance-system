@@ -225,6 +225,16 @@ function addMakeupPunch(lineId, date, time) {
   return rec;
 }
 
+// 設定當天出勤的用餐選擇（kind: 'lunch'=中午, 'ot'=加班；eat: 是否用餐）
+function setAttendanceMeal(lineId, date, kind, eat) {
+  const db = readDb();
+  const rec = db.attendance.find(a => a.lineId === lineId && a.date === date);
+  if (!rec) return null;
+  rec[kind === 'ot' ? 'otMeal' : 'lunchMeal'] = !!eat;
+  writeDb(db);
+  return rec;
+}
+
 // ── 假單 ──────────────────────────────────────────
 function getAllLeaves() {
   return readDb().leaves;
@@ -483,7 +493,7 @@ function deletePayroll(id) {
 
 module.exports = {
   getEmployee, getAllEmployees, createEmployee, updateEmployee, deleteEmployee,
-  getTodayRecord, getAllAttendance, checkIn, checkOut, addMakeupPunch,
+  getTodayRecord, getAllAttendance, checkIn, checkOut, addMakeupPunch, setAttendanceMeal,
   updateAttendance, deleteAttendance, addAttendance,
   getAllLeaves, getLeavesByEmployee, createLeave, reviewLeave, getLeaveById,
   getAllPunchRequests, createPunchRequest, reviewPunchRequest,
