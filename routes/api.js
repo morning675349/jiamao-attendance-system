@@ -7,6 +7,12 @@ const { getTaipeiTime, calcAnnualLeaveDays, isLate, getLateMinutes } = require('
 
 const LEAVE_TYPES = { annual: '特休假', sick: '病假', personal: '事假', other: '其他假別' };
 
+// 上班卡提前開放分鐘數（例：上班 08:00 → 07:55 起開放打卡）
+const CHECKIN_OPEN_BEFORE_MIN = 5;
+// 'HH:MM' → 當日分鐘數
+const hhmmToMin = t => { const [h, m] = String(t).split(':').map(Number); return h * 60 + m; };
+const minToHhmm = n => `${String(Math.floor(n / 60)).padStart(2, '0')}:${String(n % 60).padStart(2, '0')}`;
+
 // 所有 API 回應禁止 Varnish 快取
 router.use((req, res, next) => {
   res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
@@ -81,10 +87,15 @@ router.post('/liff/punch', async (req, res) => {
 
   const { date, time } = getTaipeiTime();
   const location = (lat && lng) ? { lat, lng } : null;
+  const companySetting = (db.getCompanies() || []).find(c => c.id === (db.getSalarySettings(lineId) || {}).companyId);
 
   if (action === 'checkin') {
-    const companySetting = (db.getCompanies() || []).find(c => c.id === (db.getSalarySettings(lineId) || {}).companyId);
-    const workStart = companySetting?.workStart || process.env.WORK_START;
+    const workStart = companySetting?.workStart || process.env.WORK_START || '08:00';
+    // ① 上班卡開放時間 = 上班時間提前 N 分鐘；太早不給打
+    const openMin = hhmmToMin(workStart) - CHECKIN_OPEN_BEFORE_MIN;
+    if (hhmmToMin(time) < openMin) {
+      return res.status(403).json({ error: `⏰ 尚未開放打卡\n上班卡 ${minToHhmm(openMin)} 起才能打（上班時間 ${workStart}）` });
+    }
     const late = isLate(time, workStart);
     const lateMinutes = getLateMinutes(time, workStart);
     const result = db.checkIn(lineId, date, time, location, late ? 'late' : 'normal', lateMinutes);
@@ -99,6 +110,16 @@ router.post('/liff/punch', async (req, res) => {
       }).catch(console.error);
     });
   } else {
+    // ② 超過加班起算時間（預設 17:30）→ 需有當日「已核准」的加班申請才能打下班卡
+    const overtimeStart = companySetting?.overtimeStart || '17:30';
+    if (hhmmToMin(time) > hhmmToMin(overtimeStart)) {
+      const approvedOT = db.getAllOvertimeRequests().find(
+        r => r.lineId === lineId && r.date === date && r.status === 'approved'
+      );
+      if (!approvedOT) {
+        return res.status(403).json({ error: `🚫 已超過 ${overtimeStart}（加班起算時間）\n加班需先提出申請並經主管核准，才能打下班卡。\n請於 LINE 輸入「加班申請」。` });
+      }
+    }
     const result = db.checkOut(lineId, date, time, location);
     if (result.error) return res.status(400).json({ error: result.error });
     res.json({ time, workHours: result.workHours, note: '' });
