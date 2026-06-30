@@ -61,15 +61,23 @@ function calcWorkHoursFromSegments(segments) {
 
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
 
-// 計算特休天數：入職第一年 7 天，之後每年 +1 天
-// 若有手動覆蓋（annualLeaveOverride）則使用覆蓋值
+// 計算特休天數（勞基法 §38，依年資級距）；有手動覆蓋則使用覆蓋值
+//  未滿6個月：0　6個月~未滿1年：3　1~未滿2年：7　2~未滿3年：10
+//  3~未滿5年：14　5~未滿10年：15　10年以上：每滿1年加1日，上限30日
+//  （即 10年=16、11年=17…24年起封頂 30）
 function calcAnnualLeaveDays(joinDate, override) {
   if (override !== null && override !== undefined && override !== '') return Number(override);
-  if (!joinDate) return 7;
+  if (!joinDate) return 0;
   const joined = new Date(joinDate);
-  const now = new Date();
-  const years = Math.floor((now - joined) / (365.25 * 24 * 60 * 60 * 1000));
-  return 7 + Math.max(0, years);
+  if (isNaN(joined.getTime())) return 0;
+  const years = (new Date() - joined) / (365.25 * 24 * 60 * 60 * 1000);
+  if (years < 0.5) return 0;
+  if (years < 1)   return 3;
+  if (years < 2)   return 7;
+  if (years < 3)   return 10;
+  if (years < 5)   return 14;
+  if (years < 10)  return 15;
+  return Math.min(30, Math.floor(years) + 6);
 }
 
 module.exports = { getTaipeiTime, isLate, getLateMinutes, calcWorkHours, calcWorkHoursFromSegments, WEEKDAYS, calcAnnualLeaveDays };
