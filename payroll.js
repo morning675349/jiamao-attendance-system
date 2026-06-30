@@ -101,21 +101,10 @@ function calcMealAllowance(attendance) {
   }, 0);
 }
 
-// 加班伙食津貼：當天核准加班 ≥ 2hr 且「加班不用餐」→ 80元（每日一次）
-function calcOvertimeMealAllowance(approvedOT, attendance) {
-  const otByDate = {};
-  (approvedOT || []).forEach(o => { otByDate[o.date] = (otByDate[o.date] || 0) + (Number(o.hours) || 0); });
-  const attByDate = {};
-  (attendance || []).forEach(a => { attByDate[a.date] = a; });
-  let total = 0;
-  for (const date in otByDate) {
-    if (otByDate[date] >= 2) {
-      const a = attByDate[date];
-      const ate = a ? (a.otMeal !== false) : true;      // 未設視為用餐
-      if (!ate) total += 80;
-    }
-  }
-  return total;
+// 加班伙食津貼：核准加班 ≥ 2hr 且申請時選「不需要便當」→ 80元（每場）
+// （需要便當 meal=true → 公司供餐不另發；不需要 meal=false → 補 80）
+function calcOvertimeMealAllowance(approvedOT) {
+  return (approvedOT || []).filter(o => Number(o.hours) >= 2 && o.meal === false).length * 80;
 }
 
 // 月薪資自動計算（草稿，admin可再手動調整）
@@ -134,7 +123,7 @@ function generatePayroll({ salarySettings, attendance, approvedLeaves, approvedO
     jobAllowance:        Number(s.jobAllowance) || 0,
     perfectAttendance:   Number(s.perfectAttendance) || 0,
     mealAllowance:       calcMealAllowance(attendance),
-    overtimeMealAllowance: calcOvertimeMealAllowance(approvedOT, attendance),
+    overtimeMealAllowance: calcOvertimeMealAllowance(approvedOT),
     overtimePay:         calcOvertimePay(baseSalary, approvedOT),
     transportAllowance:  Number(s.transportAllowance) || 0,
     phoneAllowance:      Number(s.phoneAllowance) || 0,

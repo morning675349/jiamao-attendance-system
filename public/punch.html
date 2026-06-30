@@ -168,6 +168,14 @@
       </div>
       <p id="ot-hours" class="text-xs text-amber-600 font-medium"></p>
       <div>
+        <label class="text-sm text-gray-600 mb-1 block">加班便當</label>
+        <div class="flex gap-2">
+          <button type="button" id="ot-meal-yes" onclick="setOtMeal(true)" class="flex-1 py-2.5 rounded-lg text-sm font-medium border border-gray-200 transition">需要便當 🍱</button>
+          <button type="button" id="ot-meal-no" onclick="setOtMeal(false)" class="flex-1 py-2.5 rounded-lg text-sm font-medium border border-gray-200 transition">不需要</button>
+        </div>
+        <p id="ot-meal-hint" class="text-xs text-gray-400 mt-1"></p>
+      </div>
+      <div>
         <label class="text-sm text-gray-600 mb-1 block">加班原因 <span class="text-red-400">*</span></label>
         <div class="flex flex-wrap gap-1.5 mb-2" id="ot-reason-chips"></div>
         <textarea id="ot-reason" rows="2" placeholder="點上方選項，或自行輸入..." class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-base resize-none focus:outline-none focus:ring-2 focus:ring-amber-400"></textarea>
@@ -278,8 +286,8 @@ function setMeal(eat) {
 
 function setupMealToggle() {
   const hour = Number(new Date().toLocaleTimeString('en-GB', { timeZone: 'Asia/Taipei', hour12: false }).slice(0, 2));
+  // 只在「早上第一次上班」問中午用餐；加班便當改在「加班申請」時選
   if (hour < 14) { mealKind = 'lunch'; document.getElementById('meal-question').textContent = '今天中午要用餐嗎？'; }
-  else if (hour >= 17) { mealKind = 'ot'; document.getElementById('meal-question').textContent = '加班要用餐嗎？'; }
   else { mealKind = null; }
   const box = document.getElementById('meal-toggle');
   if (mealKind) { box.classList.remove('hidden'); setMeal(true); }
@@ -523,7 +531,17 @@ function openOvertime() {
     `<button type="button" onclick="document.getElementById('ot-reason').value='${r}'" class="px-3 py-1.5 rounded-full text-sm border border-gray-200 text-gray-600 hover:bg-amber-50 hover:border-amber-300">${r}</button>`
   ).join('');
   updateOtHours();
+  setOtMeal(true);   // 預設需要便當
   show('overtime');
+}
+
+let otMealNeed = true;
+function setOtMeal(need) {
+  otMealNeed = need;
+  const on = 'bg-amber-500 text-white border-amber-500', off = 'border-gray-200 text-gray-600';
+  document.getElementById('ot-meal-yes').className = `flex-1 py-2.5 rounded-lg text-sm font-medium border transition ${need ? on : off}`;
+  document.getElementById('ot-meal-no').className = `flex-1 py-2.5 rounded-lg text-sm font-medium border transition ${!need ? on : off}`;
+  document.getElementById('ot-meal-hint').textContent = need ? '公司會準備便當' : '不訂便當，加班≥2hr 補 80 元伙食津貼';
 }
 
 function updateOtHours() {
@@ -548,7 +566,7 @@ async function submitOvertime() {
   try {
     const res = await fetch('/api/liff/overtime-request', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ accessToken, date, startTime, endTime, reason })
+      body: JSON.stringify({ accessToken, date, startTime, endTime, reason, meal: otMealNeed })
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || '送出失敗');

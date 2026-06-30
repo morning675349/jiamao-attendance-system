@@ -418,13 +418,14 @@ function getAllOvertimeRequests() {
   return db.overtimeRequests || [];
 }
 
-function createOvertimeRequest({ lineId, date, startTime, endTime, hours, reason }) {
+function createOvertimeRequest({ lineId, date, startTime, endTime, hours, reason, meal }) {
   const db = readDb();
   if (!db.overtimeRequests) db.overtimeRequests = [];
   const req = {
     id: uuidv4(), lineId, date, startTime, endTime,
     hours: Number(hours) || 0,
     reason,
+    meal: !!meal,
     status: 'pending',
     reviewNote: '',
     reviewedAt: null,

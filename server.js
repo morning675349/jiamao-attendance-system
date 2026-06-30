@@ -58,3 +58,6 @@ app.listen(PORT, () => {
   console.log(`📡 LINE Webhook：http://localhost:${PORT}/webhook`);
   if (!hasLineConfig) console.log(`⚠️  LINE Bot 未設定，僅管理後台可用\n`);
 });
+
+// 用餐統計定時推播（10:00 中午、15:30 加班便當）
+if (hasLineConfig) require('./scheduler').start();

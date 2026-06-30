@@ -235,7 +235,7 @@ router.post('/liff/punch-request', async (req, res) => {
 
 // ── 加班申請（LIFF 表單）──
 router.post('/liff/overtime-request', async (req, res) => {
-  const { accessToken, date, startTime, endTime, reason } = req.body || {};
+  const { accessToken, date, startTime, endTime, reason, meal } = req.body || {};
   if (!accessToken) return res.status(400).json({ error: '缺少 accessToken' });
   let profile;
   try { profile = await verifyLineToken(accessToken); }
@@ -247,7 +247,7 @@ router.post('/liff/overtime-request', async (req, res) => {
   let hours = ((eh * 60 + em) - (sh * 60 + sm)) / 60;
   if (!(hours > 0)) return res.status(400).json({ error: '結束時間需晚於開始時間' });
   hours = Math.round(hours * 10) / 10;
-  const request = db.createOvertimeRequest({ lineId: profile.userId, date, startTime, endTime, hours, reason: reason.trim() });
+  const request = db.createOvertimeRequest({ lineId: profile.userId, date, startTime, endTime, hours, reason: reason.trim(), meal: !!meal });
   const flex = {
     type: 'flex', altText: `${employee.name} 申請加班`,
     contents: { type: 'bubble',
@@ -256,6 +256,7 @@ router.post('/liff/overtime-request', async (req, res) => {
       body: { type: 'box', layout: 'vertical', spacing: 'sm', contents: [
         { type: 'text', text: `👤 ${employee.name}`, weight: 'bold' },
         { type: 'text', text: `📅 ${date}　${startTime}–${endTime}（${hours}H）`, color: '#555555', wrap: true },
+        { type: 'text', text: `便當：${meal ? '需要 🍱' : '不需要'}`, color: '#555555' },
         { type: 'text', text: `原因：${reason.trim()}`, color: '#555555', wrap: true },
       ] },
       footer: { type: 'box', layout: 'horizontal', spacing: 'sm', contents: [
@@ -327,6 +328,10 @@ router.get('/announcement-image/:id', (req, res) => {
 });
 
 router.use(auth);
+
+// 手動觸發用餐統計推播（測試用）
+router.post('/notify/lunch-stats', (req, res) => { require('../scheduler').notifyLunchStats(); res.json({ ok: true }); });
+router.post('/notify/ot-stats', (req, res) => { require('../scheduler').notifyOtMealStats(); res.json({ ok: true }); });
 
 // ── Stats ─────────────────────────────────────────────
 router.get('/stats/today', (req, res) => {
