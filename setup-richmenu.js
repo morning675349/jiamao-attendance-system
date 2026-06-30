@@ -216,6 +216,8 @@ async function main() {
   const checkinUrl  = `https://liff.line.me/${LIFF_ID}?action=checkin`;
   const checkoutUrl = `https://liff.line.me/${LIFF_ID}?action=checkout`;
   const forgotUrl   = `https://liff.line.me/${LIFF_ID}?action=forgot`;
+  const overtimeUrl = `https://liff.line.me/${LIFF_ID}?action=overtime`;
+  const leaveUrl    = `https://liff.line.me/${LIFF_ID}?action=leave`;
 
   // 1. 建立選單結構（2500x1686 / 3x2）
   const menuDef = {
@@ -226,8 +228,8 @@ async function main() {
     areas: [
       { bounds: { x:0,    y:0,    width:833, height:843 }, action: { type: 'uri',     uri: checkinUrl } },
       { bounds: { x:833,  y:0,    width:834, height:843 }, action: { type: 'uri',     uri: checkoutUrl } },
-      { bounds: { x:1667, y:0,    width:833, height:843 }, action: { type: 'message', text: '加班申請' } },
-      { bounds: { x:0,    y:843,  width:833, height:843 }, action: { type: 'message', text: '申請請假' } },
+      { bounds: { x:1667, y:0,    width:833, height:843 }, action: { type: 'uri',     uri: overtimeUrl } },
+      { bounds: { x:0,    y:843,  width:833, height:843 }, action: { type: 'uri',     uri: leaveUrl } },
       { bounds: { x:833,  y:843,  width:834, height:843 }, action: { type: 'uri',     uri: forgotUrl } },
       { bounds: { x:1667, y:843,  width:833, height:843 }, action: { type: 'message', text: '出勤記錄' } },
     ]

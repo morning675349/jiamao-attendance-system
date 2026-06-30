@@ -233,6 +233,79 @@ router.post('/liff/punch-request', async (req, res) => {
   res.json(request);
 });
 
+// ── 加班申請（LIFF 表單）──
+router.post('/liff/overtime-request', async (req, res) => {
+  const { accessToken, date, startTime, endTime, reason } = req.body || {};
+  if (!accessToken) return res.status(400).json({ error: '缺少 accessToken' });
+  let profile;
+  try { profile = await verifyLineToken(accessToken); }
+  catch (e) { return res.status(401).json({ error: 'LINE Token 無效，請重新開啟頁面' }); }
+  const employee = db.getEmployee(profile.userId);
+  if (!employee) return res.status(404).json({ error: '帳號未綁定，請先在 LINE Bot 輸入「綁定 姓名」' });
+  if (!date || !startTime || !endTime || !reason?.trim()) return res.status(400).json({ error: '請填寫完整資訊' });
+  const [sh, sm] = startTime.split(':').map(Number), [eh, em] = endTime.split(':').map(Number);
+  let hours = ((eh * 60 + em) - (sh * 60 + sm)) / 60;
+  if (!(hours > 0)) return res.status(400).json({ error: '結束時間需晚於開始時間' });
+  hours = Math.round(hours * 10) / 10;
+  const request = db.createOvertimeRequest({ lineId: profile.userId, date, startTime, endTime, hours, reason: reason.trim() });
+  const flex = {
+    type: 'flex', altText: `${employee.name} 申請加班`,
+    contents: { type: 'bubble',
+      header: { type: 'box', layout: 'vertical', backgroundColor: '#F59E0B',
+        contents: [{ type: 'text', text: '⏰ 加班申請', weight: 'bold', size: 'lg', color: '#ffffff' }] },
+      body: { type: 'box', layout: 'vertical', spacing: 'sm', contents: [
+        { type: 'text', text: `👤 ${employee.name}`, weight: 'bold' },
+        { type: 'text', text: `📅 ${date}　${startTime}–${endTime}（${hours}H）`, color: '#555555', wrap: true },
+        { type: 'text', text: `原因：${reason.trim()}`, color: '#555555', wrap: true },
+      ] },
+      footer: { type: 'box', layout: 'horizontal', spacing: 'sm', contents: [
+        { type: 'button', style: 'primary', color: '#10B981', action: { type: 'postback', label: '✅ 核准', data: `action=review_overtime&id=${request.id}&status=approved`, displayText: '核准加班' } },
+        { type: 'button', style: 'primary', color: '#EF4444', action: { type: 'postback', label: '❌ 駁回', data: `action=review_overtime&id=${request.id}&status=rejected`, displayText: '駁回加班' } },
+      ] } } };
+  db.getAllEmployees().filter(e => e.role === 'admin').forEach(admin => client.pushMessage({ to: admin.lineId, messages: [flex] }).catch(console.error));
+  res.json(request);
+});
+
+// ── 請假申請（LIFF 表單，可附證明）──
+router.post('/liff/leave-request', async (req, res) => {
+  const { accessToken, type, date, reason, imageBase64 } = req.body || {};
+  if (!accessToken) return res.status(400).json({ error: '缺少 accessToken' });
+  let profile;
+  try { profile = await verifyLineToken(accessToken); }
+  catch (e) { return res.status(401).json({ error: 'LINE Token 無效，請重新開啟頁面' }); }
+  const employee = db.getEmployee(profile.userId);
+  if (!employee) return res.status(404).json({ error: '帳號未綁定，請先在 LINE Bot 輸入「綁定 姓名」' });
+  if (!type || !date || !reason?.trim()) return res.status(400).json({ error: '請填寫完整資訊' });
+  let documentPath = null, hasDocument = false;
+  const m = /^data:image\/(png|jpe?g);base64,(.+)$/i.exec(imageBase64 || '');
+  if (m) {
+    const ext = /png/i.test(m[1]) ? 'png' : 'jpg';
+    const dir = path.join(__dirname, '..', 'data', 'uploads');
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    documentPath = `leave-${Date.now()}-${profile.userId.slice(-6)}.${ext}`;
+    fs.writeFileSync(path.join(dir, documentPath), Buffer.from(m[2], 'base64'));
+    hasDocument = true;
+  }
+  const leave = db.createLeave({ lineId: profile.userId, date, type, reason: reason.trim(), documentPath, hasDocument });
+  const flex = {
+    type: 'flex', altText: `${employee.name} 申請${LEAVE_TYPES[type] || '請假'}`,
+    contents: { type: 'bubble',
+      header: { type: 'box', layout: 'vertical', backgroundColor: '#3B82F6',
+        contents: [{ type: 'text', text: '📋 請假申請', weight: 'bold', size: 'lg', color: '#ffffff' }] },
+      body: { type: 'box', layout: 'vertical', spacing: 'sm', contents: [
+        { type: 'text', text: `👤 ${employee.name}`, weight: 'bold' },
+        { type: 'text', text: `📅 ${date}　假別：${LEAVE_TYPES[type] || type}`, color: '#555555', wrap: true },
+        { type: 'text', text: `原因：${reason.trim()}`, color: '#555555', wrap: true },
+        ...(hasDocument ? [{ type: 'text', text: '📎 已附證明（後台可查看）', color: '#16A34A', size: 'sm' }] : []),
+      ] },
+      footer: { type: 'box', layout: 'horizontal', spacing: 'sm', contents: [
+        { type: 'button', style: 'primary', color: '#10B981', action: { type: 'postback', label: '✅ 核准', data: `action=review_leave&id=${leave.id}&status=approved`, displayText: '核准假單' } },
+        { type: 'button', style: 'primary', color: '#EF4444', action: { type: 'postback', label: '❌ 駁回', data: `action=review_leave&id=${leave.id}&status=rejected`, displayText: '駁回假單' } },
+      ] } } };
+  db.getAllEmployees().filter(e => e.role === 'admin').forEach(admin => client.pushMessage({ to: admin.lineId, messages: [flex] }).catch(console.error));
+  res.json(leave);
+});
+
 // 請假證明文件（需 admin token；可用 ?token= 方便後台 <img>/<a> 直接連）
 router.get('/leaves/:id/document', (req, res) => {
   const t = req.headers['x-admin-token'] || req.query.token;

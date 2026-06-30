@@ -62,12 +62,12 @@ async function handleText(event, lineId) {
   if (/選單|menu|主選單|help/.test(cmd)) return sendMenu(event.replyToken, employee);
   if (/上班打卡|打卡上班|上班|签到/.test(cmd)) return askLocation(event, lineId, employee, 'checkin');
   if (/下班打卡|打卡下班|下班|签退/.test(cmd)) return askLocation(event, lineId, employee, 'checkout');
-  if (/申請請假|請假|假單/.test(cmd)) return startLeave(event, lineId);
+  if (/申請請假|請假|假單/.test(cmd)) return sendLeaveLink(event.replyToken);
   if (/出勤記錄|我的記錄|打卡記錄|查詢/.test(cmd)) return sendMyRecord(event.replyToken, lineId, employee);
   if (/假單記錄|請假記錄/.test(cmd)) return sendMyLeaves(event.replyToken, lineId, employee);
   if (/公司公告|公告/.test(cmd)) return sendAnnouncements(event.replyToken);
   if (/忘記打卡|補打卡/.test(cmd)) return sendForgotLink(event.replyToken);
-  if (/加班申請|申請加班/.test(cmd)) return startOvertimeRequest(event, lineId);
+  if (/加班申請|申請加班/.test(cmd)) return sendOvertimeLink(event.replyToken);
   if (/查薪資|薪資單|我的薪資/.test(cmd)) return sendMyPayroll(event.replyToken, lineId, employee);
 
   if (employee.role === 'admin') {
@@ -102,7 +102,7 @@ async function handlePostback(event, lineId) {
 
   if (action === 'checkin') return askLocation(event, lineId, employee, 'checkin');
   if (action === 'checkout') return askLocation(event, lineId, employee, 'checkout');
-  if (action === 'leave') return startLeave(event, lineId);
+  if (action === 'leave') return sendLeaveLink(event.replyToken);
   if (action === 'my_record') return sendMyRecord(event.replyToken, lineId, employee);
   if (action === 'my_leaves') return sendMyLeaves(event.replyToken, lineId, employee);
 
@@ -183,6 +183,21 @@ async function handlePostback(event, lineId) {
     client.pushMessage({
       to: request.lineId,
       messages: [{ type: 'text', text: `📝 補打卡結果\n\n姓名：${emp?.name || '員工'}\n日期：${request.date}\n類型：補打${typeText}卡\n申請時間：${request.requestedTime}\n狀態：${statusText}` }]
+    }).catch(console.error);
+  }
+
+  if (action === 'review_overtime') {
+    if (employee.role !== 'admin') return reply(event.replyToken, '僅管理員可審核');
+    const id = p.get('id');
+    const status = p.get('status');
+    const request = db.reviewOvertimeRequest(id, status);
+    if (!request) return reply(event.replyToken, '找不到此加班申請');
+    const statusText = status === 'approved' ? '✅ 已核准' : '❌ 已駁回';
+    await reply(event.replyToken, `加班審核完成 ${statusText}`);
+    const emp = db.getEmployee(request.lineId);
+    client.pushMessage({
+      to: request.lineId,
+      messages: [{ type: 'text', text: `⏰ 加班審核結果\n\n姓名：${emp?.name || '員工'}\n日期：${request.date}\n時段：${request.startTime}～${request.endTime}（${request.hours}H）\n狀態：${statusText}` }]
     }).catch(console.error);
   }
 }
@@ -427,6 +442,16 @@ async function sendAnnouncements(replyToken) {
 async function sendForgotLink(replyToken) {
   const url = `https://liff.line.me/${process.env.LIFF_ID}?action=forgot`;
   return reply(replyToken, `📝 補打卡申請\n\n點下方連結開啟申請表單：\n${url}\n\n填寫忘記打卡的原因後送出，等待主管審核，結果會透過 LINE 通知您。`);
+}
+
+async function sendOvertimeLink(replyToken) {
+  const url = `https://liff.line.me/${process.env.LIFF_ID}?action=overtime`;
+  return reply(replyToken, `⏰ 加班申請\n\n點下方連結開啟申請表單：\n${url}\n\n選好日期、時間、原因後送出，等待主管審核。`);
+}
+
+async function sendLeaveLink(replyToken) {
+  const url = `https://liff.line.me/${process.env.LIFF_ID}?action=leave`;
+  return reply(replyToken, `📋 請假申請\n\n點下方連結開啟申請表單：\n${url}\n\n選好假別、日期、原因（病假/其他假別可附證明）後送出，等待主管審核。`);
 }
 
 // ── 管理員指令 ────────────────────────────────────────

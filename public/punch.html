@@ -138,6 +138,93 @@
   </div>
 </div>
 
+<!-- Overtime Form -->
+<div id="s-overtime" class="hidden w-full max-w-sm fade">
+  <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+    <div class="px-6 py-5 text-white text-center" style="background:linear-gradient(135deg,#F59E0B,#D97706)">
+      <div class="text-4xl mb-1">⏰</div>
+      <h1 class="text-xl font-bold">加班申請</h1>
+      <p class="text-sm opacity-80 mt-0.5">選擇加班日期與時段</p>
+    </div>
+    <div class="px-6 py-5 space-y-4">
+      <div class="flex items-center gap-3">
+        <img id="ot-avatar" src="" class="w-10 h-10 rounded-full bg-gray-100 object-cover">
+        <p class="font-semibold text-gray-800" id="ot-name"></p>
+      </div>
+      <hr class="border-gray-100">
+      <div>
+        <label class="text-xs text-gray-500 mb-1 block">加班日期</label>
+        <input type="date" id="ot-date" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="text-xs text-gray-500 mb-1 block">開始時間</label>
+          <input type="time" id="ot-start" value="17:30" oninput="updateOtHours()" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
+        </div>
+        <div>
+          <label class="text-xs text-gray-500 mb-1 block">結束時間</label>
+          <input type="time" id="ot-end" value="19:00" oninput="updateOtHours()" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
+        </div>
+      </div>
+      <p id="ot-hours" class="text-xs text-amber-600 font-medium"></p>
+      <div>
+        <label class="text-xs text-gray-500 mb-1 block">加班原因 <span class="text-red-400">*</span></label>
+        <div class="flex flex-wrap gap-1.5 mb-2" id="ot-reason-chips"></div>
+        <textarea id="ot-reason" rows="2" placeholder="點上方選項，或自行輸入..." class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-amber-400"></textarea>
+      </div>
+    </div>
+    <div class="px-6 pb-6 space-y-2">
+      <button id="ot-submit-btn" onclick="submitOvertime()" class="w-full py-3 rounded-xl font-bold text-white text-base transition active:scale-95" style="background:linear-gradient(135deg,#F59E0B,#D97706)">送出加班申請</button>
+      <button onclick="tryClose()" class="w-full py-2 text-sm text-gray-300 hover:text-gray-500">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- Leave Form -->
+<div id="s-leave" class="hidden w-full max-w-sm fade">
+  <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+    <div class="px-6 py-5 text-white text-center" style="background:linear-gradient(135deg,#3B82F6,#2563EB)">
+      <div class="text-4xl mb-1">📋</div>
+      <h1 class="text-xl font-bold">請假申請</h1>
+      <p class="text-sm opacity-80 mt-0.5">選擇假別、日期與原因</p>
+    </div>
+    <div class="px-6 py-5 space-y-4">
+      <div class="flex items-center gap-3">
+        <img id="lv-avatar" src="" class="w-10 h-10 rounded-full bg-gray-100 object-cover">
+        <p class="font-semibold text-gray-800" id="lv-name"></p>
+      </div>
+      <hr class="border-gray-100">
+      <div>
+        <label class="text-xs text-gray-500 mb-1 block">假別</label>
+        <select id="lv-type" onchange="onLeaveTypeChange()" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
+          <option value="annual">特休假</option>
+          <option value="sick">病假</option>
+          <option value="personal">事假</option>
+          <option value="other">其他假別</option>
+        </select>
+      </div>
+      <div>
+        <label class="text-xs text-gray-500 mb-1 block">請假日期</label>
+        <input type="date" id="lv-date" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
+      </div>
+      <div>
+        <label class="text-xs text-gray-500 mb-1 block">請假原因 <span class="text-red-400">*</span></label>
+        <textarea id="lv-reason" rows="2" placeholder="請說明請假原因..." class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-400"></textarea>
+      </div>
+      <div id="lv-doc-box" class="hidden">
+        <label class="text-xs text-gray-500 mb-1 block">證明文件（選填）</label>
+        <input type="file" id="lv-image" accept="image/png,image/jpeg" onchange="previewLeaveImage()" class="text-xs text-gray-600">
+        <img id="lv-image-preview" class="hidden mt-2 max-h-32 rounded-lg border border-gray-200">
+        <p id="lv-doc-hint" class="text-xs text-gray-400 mt-1"></p>
+      </div>
+    </div>
+    <div class="px-6 pb-6 space-y-2">
+      <button id="lv-submit-btn" onclick="submitLeaveForm()" class="w-full py-3 rounded-xl font-bold text-white text-base transition active:scale-95" style="background:linear-gradient(135deg,#3B82F6,#2563EB)">送出請假申請</button>
+      <button onclick="tryClose()" class="w-full py-2 text-sm text-gray-300 hover:text-gray-500">取消</button>
+    </div>
+  </div>
+</div>
+
 <!-- Success -->
 <div id="s-success" class="hidden text-center fade">
   <div class="text-7xl mb-4">✅</div>
@@ -205,7 +292,7 @@ let userProfile = null;
 
 // ── UI helpers ────────────────────────────────────────
 function show(name) {
-  ['loading','confirm','forgot','success','forgot-success','error'].forEach(s =>
+  ['loading','confirm','forgot','overtime','leave','success','forgot-success','error'].forEach(s =>
     document.getElementById('s-' + s).classList.add('hidden')
   );
   document.getElementById('s-' + name).classList.remove('hidden');
@@ -261,6 +348,8 @@ async function init() {
       openForgot();
       return;
     }
+    if (action === 'overtime') { openOvertime(); return; }
+    if (action === 'leave') { openLeave(); return; }
 
     const bar = document.getElementById('header-bar');
     const btn = document.getElementById('confirm-btn');
@@ -417,6 +506,128 @@ async function submitForgot() {
     alert('提交失敗：' + err.message);
     btn.disabled = false;
     btn.textContent = '提交申請';
+  }
+}
+
+// ── 加班申請 ──────────────────────────────────────────
+function todayTaipei() {
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Taipei' });
+}
+
+function openOvertime() {
+  document.getElementById('ot-avatar').src = userProfile.pictureUrl || '';
+  document.getElementById('ot-name').textContent = userProfile.displayName;
+  document.getElementById('ot-date').value = todayTaipei();
+  const chips = document.getElementById('ot-reason-chips');
+  chips.innerHTML = ['趕工出貨','生產排程','設備維修','盤點','臨時任務'].map(r =>
+    `<button type="button" onclick="document.getElementById('ot-reason').value='${r}'" class="px-2.5 py-1 rounded-full text-xs border border-gray-200 text-gray-600 hover:bg-amber-50 hover:border-amber-300">${r}</button>`
+  ).join('');
+  updateOtHours();
+  show('overtime');
+}
+
+function updateOtHours() {
+  const s = document.getElementById('ot-start').value, e = document.getElementById('ot-end').value;
+  const el = document.getElementById('ot-hours');
+  if (!s || !e) { el.textContent = ''; return; }
+  const [sh,sm]=s.split(':').map(Number), [eh,em]=e.split(':').map(Number);
+  const h = Math.round(((eh*60+em)-(sh*60+sm))/6)/10;
+  el.textContent = h > 0 ? `加班時數：${h} 小時` : '⚠️ 結束時間需晚於開始時間';
+  el.className = `text-xs font-medium ${h>0?'text-amber-600':'text-red-500'}`;
+}
+
+async function submitOvertime() {
+  const date = document.getElementById('ot-date').value;
+  const startTime = document.getElementById('ot-start').value;
+  const endTime = document.getElementById('ot-end').value;
+  const reason = document.getElementById('ot-reason').value.trim();
+  if (!date || !startTime || !endTime) return alert('請選擇日期與時間');
+  if (!reason) return alert('請填寫加班原因');
+  const btn = document.getElementById('ot-submit-btn');
+  btn.disabled = true; btn.textContent = '送出中...';
+  try {
+    const res = await fetch('/api/liff/overtime-request', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ accessToken, date, startTime, endTime, reason })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || '送出失敗');
+    show('forgot-success');
+    setTimeout(() => tryClose(), 3000);
+  } catch(err) {
+    alert('送出失敗：' + err.message);
+    btn.disabled = false; btn.textContent = '送出加班申請';
+  }
+}
+
+// ── 請假申請 ──────────────────────────────────────────
+let leaveImageBase64 = null;
+
+function openLeave() {
+  document.getElementById('lv-avatar').src = userProfile.pictureUrl || '';
+  document.getElementById('lv-name').textContent = userProfile.displayName;
+  document.getElementById('lv-date').value = todayTaipei();
+  leaveImageBase64 = null;
+  document.getElementById('lv-image').value = '';
+  document.getElementById('lv-image-preview').classList.add('hidden');
+  onLeaveTypeChange();
+  show('leave');
+}
+
+function onLeaveTypeChange() {
+  const type = document.getElementById('lv-type').value;
+  const box = document.getElementById('lv-doc-box');
+  const hint = document.getElementById('lv-doc-hint');
+  if (type === 'sick' || type === 'other') {
+    box.classList.remove('hidden');
+    hint.textContent = type === 'sick' ? '病假未附證明將全額扣薪' : '如有相關證明可附上';
+  } else {
+    box.classList.add('hidden');
+  }
+}
+
+function previewLeaveImage() {
+  const f = document.getElementById('lv-image').files[0];
+  const prev = document.getElementById('lv-image-preview');
+  if (!f) { leaveImageBase64 = null; prev.classList.add('hidden'); return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      const max = 1280; let w = img.width, h = img.height;
+      if (w > max || h > max) { const r = Math.min(max/w, max/h); w = Math.round(w*r); h = Math.round(h*r); }
+      const c = document.createElement('canvas'); c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      leaveImageBase64 = c.toDataURL('image/jpeg', 0.85);
+      prev.src = leaveImageBase64; prev.classList.remove('hidden');
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(f);
+}
+
+async function submitLeaveForm() {
+  const type = document.getElementById('lv-type').value;
+  const date = document.getElementById('lv-date').value;
+  const reason = document.getElementById('lv-reason').value.trim();
+  if (!date) return alert('請選擇請假日期');
+  if (!reason) return alert('請填寫請假原因');
+  const btn = document.getElementById('lv-submit-btn');
+  btn.disabled = true; btn.textContent = '送出中...';
+  try {
+    const body = { accessToken, type, date, reason };
+    if (leaveImageBase64) body.imageBase64 = leaveImageBase64;
+    const res = await fetch('/api/liff/leave-request', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || '送出失敗');
+    show('forgot-success');
+    setTimeout(() => tryClose(), 3000);
+  } catch(err) {
+    alert('送出失敗：' + err.message);
+    btn.disabled = false; btn.textContent = '送出請假申請';
   }
 }
 
