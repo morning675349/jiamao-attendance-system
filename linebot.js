@@ -9,6 +9,7 @@ const UPLOAD_DIR = path.join(__dirname, 'data', 'uploads');
 const userStates = {};
 
 const LEAVE_TYPES = { annual: '特休假', sick: '病假', personal: '事假', other: '其他假別' };
+const PUNCH_REQ_LABELS = { checkin: '上班', checkout: '下班', ot_checkin: '加班上班', ot_checkout: '加班下班' };
 
 function getAdminIds() {
   return db.getAllEmployees().filter(e => e.role === 'admin').map(e => e.lineId);
@@ -119,6 +120,7 @@ async function handlePostback(event, lineId) {
   }
 
   if (action === 'review_leave') {
+    if (employee.role !== 'admin') return reply(event.replyToken, '僅管理員可審核');
     const id = p.get('id');
     const status = p.get('status');
     const leave = db.reviewLeave(id, status);
@@ -129,6 +131,26 @@ async function handlePostback(event, lineId) {
     client.pushMessage({
       to: leave.lineId,
       messages: [{ type: 'text', text: `📋 假單審核結果\n\n姓名：${emp?.name || '員工'}\n日期：${leave.date}\n假別：${LEAVE_TYPES[leave.type]}\n狀態：${statusText}` }]
+    }).catch(console.error);
+  }
+
+  if (action === 'review_punch') {
+    if (employee.role !== 'admin') return reply(event.replyToken, '僅管理員可審核');
+    const id = p.get('id');
+    const status = p.get('status');
+    const request = db.reviewPunchRequest(id, status);
+    if (!request) return reply(event.replyToken, '找不到此補打卡申請');
+    // 核准 → 把申請時間插入當天打卡序列（與後台審核同邏輯）
+    if (status === 'approved') {
+      db.addMakeupPunch(request.lineId, request.date, request.requestedTime);
+    }
+    const statusText = status === 'approved' ? '✅ 已核准' : '❌ 已駁回';
+    const typeText = PUNCH_REQ_LABELS[request.type] || '打卡';
+    await reply(event.replyToken, `補打卡審核完成 ${statusText}`);
+    const emp = db.getEmployee(request.lineId);
+    client.pushMessage({
+      to: request.lineId,
+      messages: [{ type: 'text', text: `📝 補打卡結果\n\n姓名：${emp?.name || '員工'}\n日期：${request.date}\n類型：補打${typeText}卡\n申請時間：${request.requestedTime}\n狀態：${statusText}` }]
     }).catch(console.error);
   }
 }

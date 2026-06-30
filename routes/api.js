@@ -207,11 +207,27 @@ router.post('/liff/punch-request', async (req, res) => {
   const request = db.createPunchRequest({ lineId, date, type, requestedTime, reason: reason.trim() });
 
   const typeText = PUNCH_REQ_LABELS[type] || '打卡';
+  const flex = {
+    type: 'flex',
+    altText: `${employee.name} 申請補打${typeText}卡`,
+    contents: {
+      type: 'bubble',
+      header: { type: 'box', layout: 'vertical', backgroundColor: '#F59E0B',
+        contents: [{ type: 'text', text: '📝 補打卡申請', weight: 'bold', size: 'lg', color: '#ffffff' }] },
+      body: { type: 'box', layout: 'vertical', spacing: 'sm', contents: [
+        { type: 'text', text: `👤 ${employee.name}`, weight: 'bold' },
+        { type: 'text', text: `類型：補打${typeText}卡`, color: '#555555' },
+        { type: 'text', text: `📅 ${date}　🕐 ${requestedTime}`, color: '#555555' },
+        { type: 'text', text: `原因：${reason.trim()}`, color: '#555555', wrap: true },
+      ] },
+      footer: { type: 'box', layout: 'horizontal', spacing: 'sm', contents: [
+        { type: 'button', style: 'primary', color: '#10B981', action: { type: 'postback', label: '✅ 核准', data: `action=review_punch&id=${request.id}&status=approved`, displayText: '核准補打卡' } },
+        { type: 'button', style: 'primary', color: '#EF4444', action: { type: 'postback', label: '❌ 駁回', data: `action=review_punch&id=${request.id}&status=rejected`, displayText: '駁回補打卡' } },
+      ] }
+    }
+  };
   db.getAllEmployees().filter(e => e.role === 'admin').forEach(admin => {
-    client.pushMessage({
-      to: admin.lineId,
-      messages: [{ type: 'text', text: `📝 補打卡申請\n${employee.name} 申請補打${typeText}卡\n日期：${date}\n申請時間：${requestedTime}\n原因：${reason}` }]
-    }).catch(console.error);
+    client.pushMessage({ to: admin.lineId, messages: [flex] }).catch(console.error);
   });
 
   res.json(request);
