@@ -203,25 +203,25 @@
         <input type="hidden" id="att-edit-id">
         <div class="space-y-3">
           <div>
-            <label class="text-xs text-gray-500 mb-1 block">員工</label>
+            <label class="text-xs text-gray-800 font-semibold mb-1 block">員工</label>
             <select id="att-edit-emp" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></select>
           </div>
           <div>
-            <label class="text-xs text-gray-500 mb-1 block">日期</label>
+            <label class="text-xs text-gray-800 font-semibold mb-1 block">日期</label>
             <input type="date" id="att-edit-date" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
           </div>
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="text-xs text-gray-500 mb-1 block">上班時間</label>
+              <label class="text-xs text-gray-800 font-semibold mb-1 block">上班時間</label>
               <input type="time" id="att-edit-checkin" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
             </div>
             <div>
-              <label class="text-xs text-gray-500 mb-1 block">下班時間</label>
+              <label class="text-xs text-gray-800 font-semibold mb-1 block">下班時間</label>
               <input type="time" id="att-edit-checkout" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
             </div>
           </div>
           <div>
-            <label class="text-xs text-gray-500 mb-1 block">狀態</label>
+            <label class="text-xs text-gray-800 font-semibold mb-1 block">狀態</label>
             <select id="att-edit-status" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
               <option value="normal">正常</option>
               <option value="late">遲到</option>
@@ -364,12 +364,12 @@
         <input type="hidden" id="ann-edit-id">
         <div class="space-y-3">
           <div>
-            <label class="text-xs text-gray-500 mb-1 block">標題 *</label>
+            <label class="text-xs text-gray-800 font-semibold mb-1 block">標題 *</label>
             <input id="ann-title" placeholder="公告標題"
               class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400">
           </div>
           <div>
-            <label class="text-xs text-gray-500 mb-1 block">內容 *</label>
+            <label class="text-xs text-gray-800 font-semibold mb-1 block">內容 *</label>
             <textarea id="ann-content" rows="4" placeholder="公告內容..."
               class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-yellow-400"></textarea>
           </div>
@@ -408,18 +408,18 @@
           </div>
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="text-xs text-gray-500 mb-1 block">辦公室緯度</label>
+              <label class="text-xs text-gray-800 font-semibold mb-1 block">辦公室緯度</label>
               <input type="number" id="fence-lat" step="0.000001" placeholder="24.123456"
                 class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono">
             </div>
             <div>
-              <label class="text-xs text-gray-500 mb-1 block">辦公室經度</label>
+              <label class="text-xs text-gray-800 font-semibold mb-1 block">辦公室經度</label>
               <input type="number" id="fence-lng" step="0.000001" placeholder="120.654321"
                 class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono">
             </div>
           </div>
           <div>
-            <label class="text-xs text-gray-500 mb-1 block">允許半徑（公尺）</label>
+            <label class="text-xs text-gray-800 font-semibold mb-1 block">允許半徑（公尺）</label>
             <div class="flex items-center gap-3">
               <input type="range" id="fence-radius-range" min="50" max="1000" step="50" value="300"
                 class="flex-1" oninput="document.getElementById('fence-radius').value=this.value">
@@ -510,11 +510,11 @@
           <p class="text-sm text-gray-500 mb-4" id="modal-emp-name"></p>
           <div class="space-y-3">
             <div>
-              <label class="text-xs text-gray-500 mb-1 block">入職日期</label>
+              <label class="text-xs text-gray-800 font-semibold mb-1 block">入職日期</label>
               <input type="date" id="modal-join-date" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
             </div>
             <div>
-              <label class="text-xs text-gray-500 mb-1 block">手動覆蓋特休天數（留空則依年資自動計算）</label>
+              <label class="text-xs text-gray-800 font-semibold mb-1 block">手動覆蓋特休天數（留空則依年資自動計算）</label>
               <input type="number" id="modal-override" placeholder="留空 = 自動計算" min="0"
                 class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
             </div>
@@ -1575,7 +1575,7 @@ async function openSlipModal(id) {
       <span>✅ 實領薪資</span><span class="font-mono">\$${(p.netSalary||0).toLocaleString()}</span>
     </div>
     <div>
-      <label class="text-xs text-gray-400 mb-1 block">備注</label>
+      <label class="text-xs text-gray-800 font-semibold mb-1 block">備注</label>
       <input type="text" id="slip-notes" value="${p.notes||''}" placeholder="備注..." class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
     </div>
     <div class="text-xs text-gray-300 mt-2">勞保費率：11.5%×20%　健保費率：5.17%×30%×(1+眷屬)</div>
@@ -1629,15 +1629,15 @@ function renderCompanies() {
       <h3 class="font-semibold mb-3">${c.name}</h3>
       <div class="grid grid-cols-3 gap-4 mb-4" style="max-width:480px">
         <div>
-          <label class="text-xs text-gray-400 mb-1 block">上班時間</label>
+          <label class="text-xs text-gray-800 font-semibold mb-1 block">上班時間</label>
           <input type="text" id="co-${c.id}-start" value="${c.workStart||'08:00'}" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder="08:00">
         </div>
         <div>
-          <label class="text-xs text-gray-400 mb-1 block">下班時間</label>
+          <label class="text-xs text-gray-800 font-semibold mb-1 block">下班時間</label>
           <input type="text" id="co-${c.id}-end" value="${c.workEnd||'17:00'}" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder="17:00">
         </div>
         <div>
-          <label class="text-xs text-gray-400 mb-1 block">加班起算</label>
+          <label class="text-xs text-gray-800 font-semibold mb-1 block">加班起算</label>
           <input type="text" id="co-${c.id}-ot" value="${c.overtimeStart||'17:30'}" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder="17:30">
         </div>
       </div>
@@ -1668,15 +1668,15 @@ if (token) {
     <input type="hidden" id="edit-emp-lineid">
     <div class="space-y-3">
       <div>
-        <label class="text-xs text-gray-500 mb-1 block">姓名</label>
+        <label class="text-xs text-gray-800 font-semibold mb-1 block">姓名</label>
         <input id="edit-emp-name" type="text" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400">
       </div>
       <div>
-        <label class="text-xs text-gray-500 mb-1 block">部門</label>
+        <label class="text-xs text-gray-800 font-semibold mb-1 block">部門</label>
         <input id="edit-emp-dept" type="text" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400">
       </div>
       <div>
-        <label class="text-xs text-gray-500 mb-1 block">角色</label>
+        <label class="text-xs text-gray-800 font-semibold mb-1 block">角色</label>
         <select id="edit-emp-role" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400">
           <option value="employee">員工</option>
           <option value="admin">管理員</option>
@@ -1698,30 +1698,30 @@ if (token) {
       <h3 class="font-bold text-lg">薪資設定</h3>
       <button onclick="document.getElementById('salary-modal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
     </div>
-    <p class="text-sm text-gray-500 mb-4" id="sf-emp-name"></p>
+    <p class="text-sm text-gray-700 font-medium mb-4" id="sf-emp-name"></p>
     <div class="grid grid-cols-2 gap-3">
-      <div><label class="text-xs text-gray-400 mb-1 block">公司</label><select id="sf-company-id" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></select></div>
-      <div><label class="text-xs text-gray-400 mb-1 block">底薪（月薪）</label><input type="number" id="sf-base-salary" min="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
-      <div><label class="text-xs text-gray-400 mb-1 block">職務加給</label><input type="number" id="sf-job-allowance" min="0" value="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
-      <div><label class="text-xs text-gray-400 mb-1 block">全勤獎金（佳懋）</label><input type="number" id="sf-perfect-attendance" min="0" value="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
-      <div><label class="text-xs text-gray-400 mb-1 block">交通費（佳懋）</label><input type="number" id="sf-transport-allowance" min="0" value="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
-      <div><label class="text-xs text-gray-400 mb-1 block">電話費（佳懋）</label><input type="number" id="sf-phone-allowance" min="0" value="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
-      <div><label class="text-xs text-gray-400 mb-1 block">出差油資（佳懋設計部）</label><input type="number" id="sf-business-trip-fuel" min="0" value="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
-      <div><label class="text-xs text-gray-400 mb-1 block">季獎金（佳懋設計部）</label><input type="number" id="sf-quarter-bonus" min="0" value="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
-      <div><label class="text-xs text-gray-400 mb-1 block">績效獎金（晟涬）</label><input type="number" id="sf-performance-bonus" min="0" value="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
-      <div><label class="text-xs text-gray-400 mb-1 block">支援其他部門津貼（晟涬）</label><input type="number" id="sf-support-allowance" min="0" value="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
-      <div><label class="text-xs text-gray-400 mb-1 block">駕駛津貼（晟涬）</label><input type="number" id="sf-driver-allowance" min="0" value="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
-      <div><label class="text-xs text-gray-400 mb-1 block">技能津貼-天車（晟涬）</label><input type="number" id="sf-skill-allowance" min="0" value="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
-      <div><label class="text-xs text-gray-400 mb-1 block">節日禮金</label><input type="number" id="sf-holiday-gift" min="0" value="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
-      <div><label class="text-xs text-gray-400 mb-1 block">其他津貼</label><input type="number" id="sf-other-allowance" min="0" value="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
+      <div><label class="text-xs text-gray-800 font-semibold mb-1 block">公司</label><select id="sf-company-id" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></select></div>
+      <div><label class="text-xs text-gray-800 font-semibold mb-1 block">底薪（月薪）</label><input type="number" id="sf-base-salary" min="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
+      <div><label class="text-xs text-gray-800 font-semibold mb-1 block">職務加給</label><input type="number" id="sf-job-allowance" min="0" value="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
+      <div><label class="text-xs text-gray-800 font-semibold mb-1 block">全勤獎金（佳懋）</label><input type="number" id="sf-perfect-attendance" min="0" value="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
+      <div><label class="text-xs text-gray-800 font-semibold mb-1 block">交通費（佳懋）</label><input type="number" id="sf-transport-allowance" min="0" value="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
+      <div><label class="text-xs text-gray-800 font-semibold mb-1 block">電話費（佳懋）</label><input type="number" id="sf-phone-allowance" min="0" value="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
+      <div><label class="text-xs text-gray-800 font-semibold mb-1 block">出差油資（佳懋設計部）</label><input type="number" id="sf-business-trip-fuel" min="0" value="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
+      <div><label class="text-xs text-gray-800 font-semibold mb-1 block">季獎金（佳懋設計部）</label><input type="number" id="sf-quarter-bonus" min="0" value="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
+      <div><label class="text-xs text-gray-800 font-semibold mb-1 block">績效獎金（晟涬）</label><input type="number" id="sf-performance-bonus" min="0" value="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
+      <div><label class="text-xs text-gray-800 font-semibold mb-1 block">支援其他部門津貼（晟涬）</label><input type="number" id="sf-support-allowance" min="0" value="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
+      <div><label class="text-xs text-gray-800 font-semibold mb-1 block">駕駛津貼（晟涬）</label><input type="number" id="sf-driver-allowance" min="0" value="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
+      <div><label class="text-xs text-gray-800 font-semibold mb-1 block">技能津貼-天車（晟涬）</label><input type="number" id="sf-skill-allowance" min="0" value="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
+      <div><label class="text-xs text-gray-800 font-semibold mb-1 block">節日禮金</label><input type="number" id="sf-holiday-gift" min="0" value="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
+      <div><label class="text-xs text-gray-800 font-semibold mb-1 block">其他津貼</label><input type="number" id="sf-other-allowance" min="0" value="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
     </div>
     <div class="mt-4 pt-3 border-t border-gray-100">
-      <p class="text-xs font-semibold text-gray-400 uppercase mb-3">勞健保設定</p>
+      <p class="text-xs font-bold text-gray-700 uppercase mb-3">勞健保設定</p>
       <div class="grid grid-cols-2 gap-3">
-        <div><label class="text-xs text-gray-400 mb-1 block">投保薪資級距</label><select id="sf-insurance-bracket" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></select></div>
-        <div><label class="text-xs text-gray-400 mb-1 block">眷屬人數（健保加乘）</label><input type="number" id="sf-dependent-count" min="0" max="10" value="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
+        <div><label class="text-xs text-gray-800 font-semibold mb-1 block">投保薪資級距</label><select id="sf-insurance-bracket" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></select></div>
+        <div><label class="text-xs text-gray-800 font-semibold mb-1 block">眷屬人數（健保加乘）</label><input type="number" id="sf-dependent-count" min="0" max="10" value="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
       </div>
-      <p class="text-xs text-gray-300 mt-2">勞保員工負擔 ≈ 投保薪資 × 2.3%　健保員工負擔 ≈ 投保薪資 × 1.551% × (1＋眷屬人數)</p>
+      <p class="text-xs text-red-600 font-medium mt-2">⚠️ 勞保員工負擔 ≈ 投保薪資 × 2.3%　健保員工負擔 ≈ 投保薪資 × 1.551% × (1＋眷屬人數)</p>
     </div>
     <div class="flex gap-2 mt-5 justify-end">
       <button onclick="document.getElementById('salary-modal').classList.add('hidden')" class="border border-gray-200 px-4 py-2 rounded-lg text-sm text-gray-500 hover:bg-gray-50">取消</button>
@@ -1739,7 +1739,7 @@ if (token) {
     </div>
     <div id="ot-modal-content" class="text-sm text-gray-600 leading-relaxed mb-4"></div>
     <div class="mb-4">
-      <label class="text-xs text-gray-400 mb-1 block">備注（可選）</label>
+      <label class="text-xs text-gray-800 font-semibold mb-1 block">備注（可選）</label>
       <input type="text" id="ot-note" placeholder="例：已確認" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
     </div>
     <div class="flex gap-2 justify-end">
