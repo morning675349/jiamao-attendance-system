@@ -155,16 +155,7 @@ router.post('/liff/punch', async (req, res) => {
     if (!onShift) {
       return res.status(400).json({ error: '您目前不在上班狀態，請先按「上班打卡」' });
     }
-    // ② 超過加班起算時間（預設 17:30）→ 需有當日「已核准」的加班申請才能打下班卡
-    const overtimeStart = companySetting?.overtimeStart || process.env.OVERTIME_START || '17:30';
-    if (hhmmToMin(time) > hhmmToMin(overtimeStart)) {
-      const approvedOT = db.getAllOvertimeRequests().find(
-        r => r.lineId === lineId && r.date === date && r.status === 'approved'
-      );
-      if (!approvedOT) {
-        return res.status(403).json({ error: `🚫 已超過 ${overtimeStart}（加班起算時間）\n加班需先提出申請並經主管核准，才能打下班卡。\n請於 LINE 輸入「加班申請」。` });
-      }
-    }
+    // 下班卡不再限制時間；加班改由員工自行填「加班單」申報實際時段作為發放依據
     const result = db.checkOut(lineId, date, time, location);
     if (result.error) return res.status(400).json({ error: result.error });
     res.json({ time, workHours: result.workHours, note: '若只是外出，回來請再按「上班打卡」' });
