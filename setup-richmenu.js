@@ -155,11 +155,11 @@ function buildSVG() {
   ${moonIcon(1250, 278)}
   ${cellText(1250, titleY[0], subtY[0], accentY[0], '下班打卡', 'Check Out')}
 
-  <!-- ── CARD 3: 加班申請 ── -->
+  <!-- ── CARD 3: 加班單 ── -->
   <rect x="1667" y="12" width="821" height="819" rx="32" fill="url(#g3)"/>
   ${glowCircles(2083, 278)}
   ${bellIcon(2083, 278)}
-  ${cellText(2083, titleY[0], subtY[0], accentY[0], '加班申請', 'Overtime')}
+  ${cellText(2083, titleY[0], subtY[0], accentY[0], '加班單', 'Overtime')}
 
   <!-- ── CARD 4: 請假申請 ── -->
   <rect x="12" y="855" width="802" height="819" rx="32" fill="url(#g4)"/>

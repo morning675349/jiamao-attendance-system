@@ -143,7 +143,7 @@
   <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
     <div class="px-6 py-5 text-white text-center" style="background:linear-gradient(135deg,#F59E0B,#D97706)">
       <div class="text-4xl mb-1">⏰</div>
-      <h1 class="text-xl font-bold">加班申請</h1>
+      <h1 class="text-xl font-bold">加班單</h1>
       <p class="text-sm opacity-80 mt-0.5">選擇加班日期與時段</p>
     </div>
     <div class="px-6 py-5 space-y-4">
@@ -185,7 +185,7 @@
       <p class="text-[13px] text-red-600 leading-relaxed bg-red-50 border border-red-100 rounded-lg px-3 py-2">⚠️ 加班時段（幾點到幾點）請<b>照實填寫</b>，作為加班費發放依據。如經查核有浮報或不實，將依公司政策處置。</p>
     </div>
     <div class="px-6 pb-6 space-y-2">
-      <button id="ot-submit-btn" onclick="submitOvertime()" class="w-full py-3 rounded-xl font-bold text-white text-base transition active:scale-95" style="background:linear-gradient(135deg,#F59E0B,#D97706)">送出加班申請</button>
+      <button id="ot-submit-btn" onclick="submitOvertime()" class="w-full py-3 rounded-xl font-bold text-white text-base transition active:scale-95" style="background:linear-gradient(135deg,#F59E0B,#D97706)">送出加班單</button>
       <button onclick="tryClose()" class="w-full py-2 text-sm text-gray-300 hover:text-gray-500">取消</button>
     </div>
   </div>
@@ -289,7 +289,7 @@ function setMeal(eat) {
 
 function setupMealToggle() {
   const hour = Number(new Date().toLocaleTimeString('en-GB', { timeZone: 'Asia/Taipei', hour12: false }).slice(0, 2));
-  // 只在「早上第一次上班」問中午用餐；加班便當改在「加班申請」時選
+  // 只在「早上第一次上班」問中午用餐；加班便當改在「加班單」時選
   if (hour < 14) { mealKind = 'lunch'; document.getElementById('meal-question').textContent = '今天中午要用餐嗎？'; }
   else { mealKind = null; }
   const box = document.getElementById('meal-toggle');
@@ -477,7 +477,7 @@ function openForgot() {
 const FORGOT_DEFAULTS = {
   checkin:     { time: '08:00', hint: '正常上班時間 08:00（超過視為遲到）' },
   checkout:    { time: '17:00', hint: '正常下班時間 17:00' },
-  ot_checkin:  { time: '17:30', hint: '加班起算 17:30（加班費需另提加班申請）' },
+  ot_checkin:  { time: '17:30', hint: '加班起算 17:30（加班費需另提加班單）' },
   ot_checkout: { time: '',      hint: '加班結束時間不限，請填寫實際下班時間' }
 };
 
@@ -520,7 +520,7 @@ async function submitForgot() {
   }
 }
 
-// ── 加班申請 ──────────────────────────────────────────
+// ── 加班單 ──────────────────────────────────────────
 function todayTaipei() {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Taipei' });
 }
@@ -577,7 +577,7 @@ async function submitOvertime() {
     setTimeout(() => tryClose(), 3000);
   } catch(err) {
     alert('送出失敗：' + err.message);
-    btn.disabled = false; btn.textContent = '送出加班申請';
+    btn.disabled = false; btn.textContent = '送出加班單';
   }
 }
 

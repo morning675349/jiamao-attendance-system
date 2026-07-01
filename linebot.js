@@ -67,7 +67,7 @@ async function handleText(event, lineId) {
   if (/假單記錄|請假記錄/.test(cmd)) return sendMyLeaves(event.replyToken, lineId, employee);
   if (/公司公告|公告/.test(cmd)) return sendAnnouncements(event.replyToken);
   if (/忘記打卡|補打卡/.test(cmd)) return sendForgotLink(event.replyToken);
-  if (/加班申請|申請加班/.test(cmd)) return sendOvertimeLink(event.replyToken);
+  if (/加班單|加班申請|申請加班/.test(cmd)) return sendOvertimeLink(event.replyToken);
   if (/查薪資|薪資單|我的薪資/.test(cmd)) return sendMyPayroll(event.replyToken, lineId, employee);
 
   if (employee.role === 'admin') {
@@ -119,7 +119,7 @@ async function handlePostback(event, lineId) {
     return reply(event.replyToken, `📋 假別：${LEAVE_TYPES[type]}\n📅 日期：${date}\n\n請輸入請假原因：`);
   }
 
-  // ── 加班申請（全程用選的）──
+  // ── 加班單（全程用選的）──
   if (action === 'ot_date') {
     const date = p.get('date');
     userStates[lineId] = { step: 'ot_picking', data: { date } };
@@ -191,7 +191,7 @@ async function handlePostback(event, lineId) {
     const id = p.get('id');
     const status = p.get('status');
     const request = db.reviewOvertimeRequest(id, status);
-    if (!request) return reply(event.replyToken, '找不到此加班申請');
+    if (!request) return reply(event.replyToken, '找不到此加班單');
     const statusText = status === 'approved' ? '✅ 已核准' : '❌ 已駁回';
     await reply(event.replyToken, `加班審核完成 ${statusText}`);
     const emp = db.getEmployee(request.lineId);
@@ -236,13 +236,13 @@ async function handleState(event, lineId, text, employee) {
     return reply(event.replyToken, '📎 請直接傳一張證明照片，或輸入「略過」送出（將以無證明計）。');
   }
 
-  // ── 加班申請：日期/時間用按鈕選（見 postback）；原因可打字 ──
+  // ── 加班單：日期/時間用按鈕選（見 postback）；原因可打字 ──
   if (state.step === 'ot_picking') {
-    if (text === '取消') { delete userStates[lineId]; return reply(event.replyToken, '已取消加班申請'); }
+    if (text === '取消') { delete userStates[lineId]; return reply(event.replyToken, '已取消加班單'); }
     return reply(event.replyToken, '請用訊息中的按鈕選擇日期與時間 🙂\n（輸入「取消」可退出）');
   }
   if (state.step === 'ot_reason') {
-    if (text === '取消') { delete userStates[lineId]; return reply(event.replyToken, '已取消加班申請'); }
+    if (text === '取消') { delete userStates[lineId]; return reply(event.replyToken, '已取消加班單'); }
     return submitOvertimeRequest(event, lineId, employee, { ...state.data, reason: text });
   }
 
@@ -372,7 +372,7 @@ async function sendMenu(replyToken, employee) {
     { label: '📊 出勤記錄', data: 'action=my_record' },
   ];
 
-  let text = `👋 ${employee.name}，您好！請選擇操作：\n\n⏰ 加班申請｜查薪資`;
+  let text = `👋 ${employee.name}，您好！請選擇操作：\n\n⏰ 加班單｜查薪資`;
   if (isAdmin) text += '\n\n💼 管理員指令：\n今日出勤｜待審假單｜月報表｜待審加班';
 
   return client.replyMessage({
@@ -446,7 +446,7 @@ async function sendForgotLink(replyToken) {
 
 async function sendOvertimeLink(replyToken) {
   const url = `https://liff.line.me/${process.env.LIFF_ID}?action=overtime`;
-  return reply(replyToken, `⏰ 加班申請\n\n點下方連結開啟申請表單：\n${url}\n\n選好日期、時間、原因後送出，等待主管審核。`);
+  return reply(replyToken, `⏰ 加班單\n\n點下方連結開啟申請表單：\n${url}\n\n選好日期、時間、原因後送出，等待主管審核。`);
 }
 
 async function sendLeaveLink(replyToken) {
@@ -628,7 +628,7 @@ function reply(replyToken, text) {
   return client.replyMessage({ replyToken, messages: [{ type: 'text', text }] });
 }
 
-// ── 加班申請啟動 ─────────────────────────────────────────
+// ── 加班單啟動 ─────────────────────────────────────────
 function startOvertimeRequest(event, lineId) {
   userStates[lineId] = { step: 'ot_picking', data: {} };
   return client.replyMessage({ replyToken: event.replyToken, messages: [makeOtDatePicker()] });
@@ -643,11 +643,11 @@ function makeOtDatePicker() {
     { label: `後天  ${addDays(date, 2)}`, date: addDays(date, 2) },
   ];
   return {
-    type: 'flex', altText: '加班申請：請選擇日期',
+    type: 'flex', altText: '加班單：請選擇日期',
     contents: { type: 'bubble',
       header: { type: 'box', layout: 'vertical', backgroundColor: '#F59E0B', paddingAll: 'lg',
         contents: [
-          { type: 'text', text: '⏰ 加班申請', color: '#ffffff', weight: 'bold', size: 'md' },
+          { type: 'text', text: '⏰ 加班單', color: '#ffffff', weight: 'bold', size: 'md' },
           { type: 'text', text: '步驟 1／3：選擇加班日期', color: '#ffffff', size: 'sm', margin: 'sm' },
         ] },
       body: { type: 'box', layout: 'vertical', spacing: 'sm', paddingAll: 'md',
@@ -696,9 +696,9 @@ async function submitOvertimeRequest(event, lineId, employee, { date, startTime,
   db.createOvertimeRequest({ lineId, date, startTime, endTime, hours, reason });
   delete userStates[lineId];
   for (const adminId of getAdminIds()) {
-    client.pushMessage({ to: adminId, messages: [{ type: 'text', text: `⏰ 加班申請\n\n姓名：${employee.name}\n日期：${date}\n時段：${startTime}～${endTime}（${hours}H）\n原因：${reason}\n\n請至後台「薪資系統 > 加班申請」審核` }] }).catch(console.error);
+    client.pushMessage({ to: adminId, messages: [{ type: 'text', text: `⏰ 加班單\n\n姓名：${employee.name}\n日期：${date}\n時段：${startTime}～${endTime}（${hours}H）\n原因：${reason}\n\n請至後台「薪資系統 > 加班單」審核` }] }).catch(console.error);
   }
-  return reply(event.replyToken, `✅ 加班申請已送出！\n\n姓名：${employee.name}\n日期：${date}\n時段：${startTime}～${endTime}（${hours}H）\n原因：${reason}\n\n等待主管審核，結果會透過 LINE 通知您。`);
+  return reply(event.replyToken, `✅ 加班單已送出！\n\n姓名：${employee.name}\n日期：${date}\n時段：${startTime}～${endTime}（${hours}H）\n原因：${reason}\n\n等待主管審核，結果會透過 LINE 通知您。`);
 }
 
 // ── 查薪資 ────────────────────────────────────────────
@@ -761,14 +761,14 @@ function formatPayrollReply(replyToken, p) {
 // ── 待審加班（管理員）──────────────────────────────────
 async function sendPendingOvertimeRequests(replyToken) {
   const pending = db.getAllOvertimeRequests().filter(r => r.status === 'pending');
-  if (!pending.length) return reply(replyToken, '目前沒有待審核的加班申請 ✅');
+  if (!pending.length) return reply(replyToken, '目前沒有待審核的加班單 ✅');
   const employees = db.getAllEmployees();
-  const lines = [`⏰ 待審加班申請（${pending.length} 件）\n`];
+  const lines = [`⏰ 待審加班單（${pending.length} 件）\n`];
   pending.slice(0, 10).forEach((r, i) => {
     const emp = employees.find(e => e.lineId === r.lineId);
     lines.push(`${i + 1}. ${emp?.name || '?'} ${r.date} ${r.startTime}～${r.endTime}(${r.hours}H)\n   ${r.reason}`);
   });
-  lines.push('\n請至後台「薪資系統 > 加班申請」審核');
+  lines.push('\n請至後台「薪資系統 > 加班單」審核');
   return reply(replyToken, lines.join('\n'));
 }
 

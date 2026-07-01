@@ -224,7 +224,7 @@ router.post('/liff/punch-request', async (req, res) => {
   res.json(request);
 });
 
-// ── 加班申請（LIFF 表單）──
+// ── 加班單（LIFF 表單）──
 router.post('/liff/overtime-request', async (req, res) => {
   const { accessToken, date, startTime, endTime, reason, meal } = req.body || {};
   if (!accessToken) return res.status(400).json({ error: '缺少 accessToken' });
@@ -243,7 +243,7 @@ router.post('/liff/overtime-request', async (req, res) => {
     type: 'flex', altText: `${employee.name} 申請加班`,
     contents: { type: 'bubble',
       header: { type: 'box', layout: 'vertical', backgroundColor: '#F59E0B',
-        contents: [{ type: 'text', text: '⏰ 加班申請', weight: 'bold', size: 'lg', color: '#ffffff' }] },
+        contents: [{ type: 'text', text: '⏰ 加班單', weight: 'bold', size: 'lg', color: '#ffffff' }] },
       body: { type: 'box', layout: 'vertical', spacing: 'sm', contents: [
         { type: 'text', text: `👤 ${employee.name}`, weight: 'bold' },
         { type: 'text', text: `📅 ${date}　${startTime}–${endTime}（${hours}H）`, color: '#555555', wrap: true },

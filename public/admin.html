@@ -98,7 +98,7 @@
       </button>
       <button onclick="tab('overtime')" id="t-overtime"
         class="nav-btn w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition">
-        ⏰ 加班申請
+        ⏰ 加班單
       </button>
       <button onclick="tab('payroll-calc')" id="t-payroll-calc"
         class="nav-btn w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition">
@@ -579,10 +579,10 @@
       </div>
     </div>
 
-    <!-- ── 加班申請 ──────────────────────────────────── -->
+    <!-- ── 加班單 ──────────────────────────────────── -->
     <div id="v-overtime" class="hidden p-6 fade">
       <div class="flex items-center justify-between mb-4">
-        <h2 class="text-xl font-bold">加班申請</h2>
+        <h2 class="text-xl font-bold">加班單</h2>
         <div class="flex gap-2">
           <select id="ot-status-filter" onchange="loadOvertime()" class="border border-gray-200 rounded-lg px-3 py-2 text-sm">
             <option value="pending">待審核</option>
@@ -1516,7 +1516,7 @@ async function saveSalarySettings() {
   alert('✅ 薪資設定已儲存');
 }
 
-// ── 加班申請 ──────────────────────────────────────────
+// ── 加班單 ──────────────────────────────────────────
 async function initOvertime() {
   if (!payrollCompanies.length) await loadPayrollCompanies();
   if (!document.getElementById('ot-month-filter').value) {
@@ -1533,7 +1533,7 @@ async function loadOvertime() {
   if (month) params.set('month', month);
   const data = await payrollApi('/overtime-requests?' + params);
   const tbody = document.getElementById('ot-tbody');
-  if (!data.length) { tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8 text-gray-400">沒有加班申請</td></tr>'; return; }
+  if (!data.length) { tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8 text-gray-400">沒有加班單</td></tr>'; return; }
   tbody.innerHTML = data.map(r => {
     const badgeClass = r.status==='pending' ? 'bg-amber-100 text-amber-700' : r.status==='approved' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700';
     const statusTxt = r.status==='pending'?'待審核':r.status==='approved'?'已核准':'已駁回';
@@ -1863,7 +1863,7 @@ if (token) {
 <div id="ot-modal" class="hidden fixed inset-0 bg-black/40 flex items-center justify-center z-50">
   <div class="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4">
     <div class="flex items-center justify-between mb-4">
-      <h3 class="font-bold text-lg">審核加班申請</h3>
+      <h3 class="font-bold text-lg">審核加班單</h3>
       <button onclick="document.getElementById('ot-modal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
     </div>
     <div id="ot-modal-content" class="text-sm text-gray-600 leading-relaxed mb-4"></div>
