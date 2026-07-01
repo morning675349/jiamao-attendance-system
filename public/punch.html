@@ -14,17 +14,17 @@
     @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.5; } }
   </style>
 </head>
-<body class="min-h-screen flex items-center justify-center p-4">
+<body class="min-h-screen flex p-4 overflow-x-hidden">
 
 <!-- Loading -->
-<div id="s-loading" class="text-center fade">
+<div id="s-loading" class="text-center fade m-auto">
   <div class="text-5xl mb-4 pulse">📍</div>
   <p class="text-gray-500 font-medium">取得 GPS 位置中...</p>
   <p class="text-gray-300 text-xs mt-2">請確認已允許位置權限</p>
 </div>
 
 <!-- Confirm -->
-<div id="s-confirm" class="hidden w-full max-w-sm fade">
+<div id="s-confirm" class="hidden w-full max-w-sm fade m-auto">
   <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
     <div id="header-bar" class="px-6 py-5 text-white text-center">
       <div id="header-icon" class="text-4xl mb-1"></div>
@@ -85,7 +85,7 @@
 </div>
 
 <!-- Forgot Punch Form -->
-<div id="s-forgot" class="hidden w-full max-w-sm fade">
+<div id="s-forgot" class="hidden w-full max-w-sm fade m-auto">
   <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
     <div class="px-6 py-5 text-white text-center" style="background:linear-gradient(135deg,#D97706,#B45309)">
       <div class="text-4xl mb-1">📝</div>
@@ -139,7 +139,7 @@
 </div>
 
 <!-- Overtime Form -->
-<div id="s-overtime" class="hidden w-full max-w-sm fade">
+<div id="s-overtime" class="hidden w-full max-w-sm fade m-auto">
   <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
     <div class="px-6 py-5 text-white text-center" style="background:linear-gradient(135deg,#F59E0B,#D97706)">
       <div class="text-4xl mb-1">⏰</div>
@@ -192,7 +192,7 @@
 </div>
 
 <!-- Leave Form -->
-<div id="s-leave" class="hidden w-full max-w-sm fade">
+<div id="s-leave" class="hidden w-full max-w-sm fade m-auto">
   <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
     <div class="px-6 py-5 text-white text-center" style="background:linear-gradient(135deg,#3B82F6,#2563EB)">
       <div class="text-4xl mb-1">📋</div>
@@ -237,7 +237,7 @@
 </div>
 
 <!-- Success -->
-<div id="s-success" class="hidden text-center fade">
+<div id="s-success" class="hidden text-center fade m-auto">
   <div class="text-7xl mb-4">✅</div>
   <h2 id="success-title" class="text-2xl font-bold text-gray-800 mb-2"></h2>
   <p id="success-time" class="text-gray-500"></p>
@@ -246,7 +246,7 @@
 </div>
 
 <!-- Forgot Success -->
-<div id="s-forgot-success" class="hidden text-center fade">
+<div id="s-forgot-success" class="hidden text-center fade m-auto">
   <div class="text-7xl mb-4">📋</div>
   <h2 class="text-2xl font-bold text-gray-800 mb-2">申請已送出</h2>
   <p class="text-gray-500 text-sm max-w-xs mx-auto">等待主管審核，結果將透過 LINE 通知您</p>
@@ -254,7 +254,7 @@
 </div>
 
 <!-- Error -->
-<div id="s-error" class="hidden text-center fade">
+<div id="s-error" class="hidden text-center fade m-auto">
   <div class="text-6xl mb-4">❌</div>
   <h2 class="text-xl font-bold text-gray-800 mb-2">打卡失敗</h2>
   <p id="error-msg" class="text-gray-500 text-sm max-w-xs mx-auto"></p>
