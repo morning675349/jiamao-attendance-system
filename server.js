@@ -59,5 +59,5 @@ app.listen(PORT, () => {
   if (!hasLineConfig) console.log(`⚠️  LINE Bot 未設定，僅管理後台可用\n`);
 });
 
-// 用餐統計定時推播（10:00 中午、15:30 加班便當）
+// 用餐統計定時推播（每日 10:00 中午用餐統計）
 if (hasLineConfig) require('./scheduler').start();

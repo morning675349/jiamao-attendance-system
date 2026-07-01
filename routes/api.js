@@ -320,9 +320,8 @@ router.get('/announcement-image/:id', (req, res) => {
 
 router.use(auth);
 
-// 手動觸發用餐統計推播（測試用）
+// 手動觸發中午用餐統計推播（測試用）
 router.post('/notify/lunch-stats', (req, res) => { require('../scheduler').notifyLunchStats(); res.json({ ok: true }); });
-router.post('/notify/ot-stats', (req, res) => { require('../scheduler').notifyOtMealStats(); res.json({ ok: true }); });
 
 // ── Stats ─────────────────────────────────────────────
 router.get('/stats/today', (req, res) => {

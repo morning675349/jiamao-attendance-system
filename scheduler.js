@@ -22,16 +22,8 @@ function notifyLunchStats() {
   pushAdmins(`🍱 今日中午用餐統計（${date}）\n────────────\n需要便當：${need.length} 人\n不需要：${noNeed.length} 人\n\n【需要便當名單】\n${names}`);
 }
 
-// 下午 15:30：加班便當數（加班申請選「需要便當」者）
-function notifyOtMealStats() {
-  const { date } = getTaipeiTime();
-  const ot = db.getAllOvertimeRequests().filter(o => o.date === date && o.status !== 'rejected');
-  const need = ot.filter(o => o.meal);
-  const names = need.map(o => `・${nameOf(o.lineId)}（${o.startTime}-${o.endTime}）`).join('\n') || '（無）';
-  pushAdmins(`🍱 今晚加班便當（${date}）\n────────────\n需要便當：${need.length} 個\n（加班申請共 ${ot.length} 件）\n\n【便當名單】\n${names}`);
-}
-
 // 每 30 秒檢查台北時間，到點推播；同日只發一次
+// 加班便當改由員工填加班單時選、主管於後台加班單查看，不再定時推播
 function start() {
   const sent = {};
   setInterval(() => {
@@ -41,12 +33,8 @@ function start() {
       sent.lunch = date;
       try { notifyLunchStats(); } catch (e) { console.error('lunch notify error:', e.message); }
     }
-    if (time === '15:30' && sent.ot !== date) {
-      sent.ot = date;
-      try { notifyOtMealStats(); } catch (e) { console.error('ot notify error:', e.message); }
-    }
   }, 30 * 1000);
-  console.log('⏱️  用餐統計排程已啟動（10:00 中午、15:30 加班便當）');
+  console.log('⏱️  用餐統計排程已啟動（每日 10:00 中午用餐統計）');
 }
 
-module.exports = { start, notifyLunchStats, notifyOtMealStats };
+module.exports = { start, notifyLunchStats };
