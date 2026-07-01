@@ -247,7 +247,7 @@ router.post('/liff/overtime-request', async (req, res) => {
       body: { type: 'box', layout: 'vertical', spacing: 'sm', contents: [
         { type: 'text', text: `👤 ${employee.name}`, weight: 'bold' },
         { type: 'text', text: `📅 ${date}　${startTime}–${endTime}（${hours}H）`, color: '#555555', wrap: true },
-        { type: 'text', text: `便當：${meal ? '需要 🍱' : '不需要'}`, color: '#555555' },
+        { type: 'text', text: `加班便當：${meal ? '有吃 🍱' : '沒吃（補津貼）'}`, color: '#555555' },
         { type: 'text', text: `原因：${reason.trim()}`, color: '#555555', wrap: true },
       ] },
       footer: { type: 'box', layout: 'horizontal', spacing: 'sm', contents: [

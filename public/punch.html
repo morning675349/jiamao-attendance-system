@@ -168,10 +168,10 @@
       </div>
       <p id="ot-hours" class="text-xs text-amber-600 font-medium"></p>
       <div>
-        <label class="text-sm text-gray-600 mb-1 block">加班便當</label>
+        <label class="text-sm text-gray-600 mb-1 block">加班便當（有沒有吃便當？供會計核算津貼）</label>
         <div class="flex gap-2">
-          <button type="button" id="ot-meal-yes" onclick="setOtMeal(true)" class="flex-1 py-2.5 rounded-lg text-sm font-medium border border-gray-200 transition">需要便當 🍱</button>
-          <button type="button" id="ot-meal-no" onclick="setOtMeal(false)" class="flex-1 py-2.5 rounded-lg text-sm font-medium border border-gray-200 transition">不需要</button>
+          <button type="button" id="ot-meal-yes" onclick="setOtMeal(true)" class="flex-1 py-2.5 rounded-lg text-sm font-medium border border-gray-200 transition">有吃便當 🍱</button>
+          <button type="button" id="ot-meal-no" onclick="setOtMeal(false)" class="flex-1 py-2.5 rounded-lg text-sm font-medium border border-gray-200 transition">沒吃便當</button>
         </div>
         <p id="ot-meal-hint" class="text-xs text-gray-400 mt-1"></p>
       </div>
@@ -560,7 +560,7 @@ function setOtMeal(need) {
   const on = 'bg-amber-500 text-white border-amber-500', off = 'border-gray-200 text-gray-600';
   document.getElementById('ot-meal-yes').className = `flex-1 py-2.5 rounded-lg text-sm font-medium border transition ${need ? on : off}`;
   document.getElementById('ot-meal-no').className = `flex-1 py-2.5 rounded-lg text-sm font-medium border transition ${!need ? on : off}`;
-  document.getElementById('ot-meal-hint').textContent = need ? '公司會準備便當' : '不訂便當，加班≥2hr 補 80 元伙食津貼';
+  document.getElementById('ot-meal-hint').textContent = need ? '有吃公司便當，不另發津貼' : '沒吃便當，加班≥2hr 補 80 元伙食津貼';
 }
 
 function updateOtHours() {

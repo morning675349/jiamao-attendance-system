@@ -1550,7 +1550,7 @@ async function loadOvertime() {
       <td class="px-4 py-3">${r.date}</td>
       <td class="px-4 py-3">${r.startTime}～${r.endTime}</td>
       <td class="px-4 py-3 font-semibold">${r.hours}H</td>
-      <td class="px-4 py-3">${r.meal ? '<span class="text-green-600">需要🍱</span>' : '<span class="text-gray-400">不需要</span>'}</td>
+      <td class="px-4 py-3">${r.meal ? '<span class="text-green-600">有吃🍱</span>' : '<span class="text-orange-600">沒吃（補津貼）</span>'}</td>
       <td class="px-4 py-3 text-gray-500 max-w-xs truncate" title="${r.reason}">${r.reason}</td>
       <td class="px-4 py-3"><span class="px-2 py-0.5 rounded text-xs font-semibold ${badgeClass}">${statusTxt}</span></td>
       <td class="px-4 py-3">${r.status==='pending' ? `<button class="text-xs px-3 py-1.5 btn-gold rounded-lg" onclick='openOTReview(${JSON.stringify(r)})'>審核</button>` : (r.reviewNote||'-')}</td>
