@@ -207,7 +207,10 @@
                 <th class="px-4 py-2.5 text-left font-medium">部門</th>
                 <th class="px-4 py-2.5 text-left font-medium">上班</th>
                 <th class="px-4 py-2.5 text-left font-medium">下班</th>
+                <th class="px-4 py-2.5 text-left font-medium">加班時段</th>
                 <th class="px-4 py-2.5 text-left font-medium">工時</th>
+                <th class="px-4 py-2.5 text-left font-medium">加班×1.34</th>
+                <th class="px-4 py-2.5 text-left font-medium">加班×1.67</th>
                 <th class="px-4 py-2.5 text-left font-medium">狀態</th>
                 <th class="px-4 py-2.5 text-left font-medium">操作</th>
               </tr>
@@ -798,7 +801,7 @@ async function loadAtt() {
   attRecords = records;
   const tbody = document.getElementById('att-table');
   if (!records.length) {
-    tbody.innerHTML = '<tr><td colspan="8" class="px-4 py-8 text-center text-gray-300 text-sm">無出勤記錄</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="11" class="px-4 py-8 text-center text-gray-300 text-sm">無出勤記錄</td></tr>';
     return;
   }
   tbody.innerHTML = records.map(r => {
@@ -808,7 +811,7 @@ async function loadAtt() {
       : '';
     const detailRow = hasSegs ? `
       <tr id="seg-${r.id}" class="hidden bg-blue-50">
-        <td colspan="8" class="px-6 py-2 text-xs text-gray-600">
+        <td colspan="11" class="px-6 py-2 text-xs text-gray-600">
           <div class="font-semibold text-gray-500 mb-1">📋 進出明細</div>
           ${r.segments.map((s, i) => {
             const last = i === r.segments.length - 1;
@@ -825,7 +828,10 @@ async function loadAtt() {
       <td class="px-4 py-2.5 text-gray-400 text-xs">${r.department}</td>
       <td class="px-4 py-2.5 text-green-600 font-mono text-xs">${r.checkIn || '--:--'}</td>
       <td class="px-4 py-2.5 font-mono text-xs">${r.incomplete ? '<span class="text-red-500">⚠️ 未完成</span>' : `<span class="text-yellow-700">${r.checkOut || '--:--'}</span>`}${outBadge}</td>
+      <td class="px-4 py-2.5 font-mono text-xs">${r.otStart ? `<span class="text-orange-600">${r.otStart}–${r.otEnd || '?'}</span>${r.weekend ? '<span class="ml-1 text-[10px] text-red-500">六日</span>' : ''}` : '<span class="text-gray-200">-</span>'}</td>
       <td class="px-4 py-2.5 text-gray-600">${r.workHours != null ? r.workHours + 'h' : '-'}</td>
+      <td class="px-4 py-2.5 font-mono text-xs">${r.ot134 ? `<span class="text-orange-700">${r.ot134}h</span>` : '<span class="text-gray-200">-</span>'}</td>
+      <td class="px-4 py-2.5 font-mono text-xs">${r.ot167 ? `<span class="text-red-600">${r.ot167}h</span>` : '<span class="text-gray-200">-</span>'}</td>
       <td class="px-4 py-2.5">${badge(r.checkIn, r.status)}</td>
       <td class="px-4 py-2.5 whitespace-nowrap">
         <button onclick="openAttModal('${r.id}')" class="text-yellow-700 text-xs hover:underline mr-2">編輯</button>
@@ -926,12 +932,13 @@ async function deleteAttRecord(id) {
 function exportCSV() {
   const month = document.getElementById('att-month').value;
   api('/attendance?month=' + month).then(records => {
-    const headers = ['日期', '姓名', '部門', '上班時間', '下班時間', '工時(小時)', '狀態'];
+    const headers = ['日期', '姓名', '部門', '上班時間', '下班時間', '加班時段', '工時(小時)', '加班前2hr(×1.34)', '加班2hr後(×1.67)', '狀態'];
     const statusMap = { normal: '正常', late: '遲到' };
     const rows = records.map(r => [
       r.date, r.employeeName, r.department,
       r.checkIn || '', r.checkOut || '',
-      r.workHours || '', statusMap[r.status] || ''
+      r.otStart ? `${r.otStart}-${r.otEnd || '?'}${r.weekend ? '(六日)' : ''}` : '',
+      r.workHours || '', r.ot134 || '', r.ot167 || '', statusMap[r.status] || ''
     ]);
     const BOM = '﻿';
     const csv = BOM + [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');

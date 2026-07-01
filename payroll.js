@@ -1,3 +1,5 @@
+const { isWeekend } = require('./utils');
+
 // 2026年（民國115年1月）勞健保投保金額分級表 — 員工負擔（官方金額）
 // a=投保金額, l=勞保員工負擔, h=健保員工負擔(本人)。勞保投保薪資上限 45,800（l 之後固定 1,145），健保續算。
 const INSURANCE_TABLE = [
@@ -114,7 +116,14 @@ function generatePayroll({ salarySettings, attendance, approvedLeaves, approvedO
 
   const attendanceDays = attendance.filter(a => a.checkIn).length;
   const totalLateMinutes = attendance.reduce((sum, a) => sum + (Number(a.lateMinutes) || 0), 0);
-  const totalOTHours = approvedOT.reduce((sum, o) => sum + (Number(o.hours) || 0), 0);
+
+  // 加班時段來源：平日＝加班單申報；週末（六日）＝當天整天工時（自動全算加班）
+  const weekdayOT = (approvedOT || []).filter(o => !isWeekend(o.date));
+  const weekendOT = (attendance || [])
+    .filter(a => a.checkIn && isWeekend(a.date) && Number(a.workHours) > 0)
+    .map(a => ({ hours: Number(a.workHours) || 0, date: a.date }));
+  const otSessions = weekdayOT.concat(weekendOT);
+  const totalOTHours = otSessions.reduce((sum, o) => sum + (Number(o.hours) || 0), 0);
 
   const bracket = Number(s.insuranceBracket) || findBracket(baseSalary);
 
@@ -124,7 +133,7 @@ function generatePayroll({ salarySettings, attendance, approvedLeaves, approvedO
     perfectAttendance:   Number(s.perfectAttendance) || 0,
     mealAllowance:       calcMealAllowance(attendance),
     overtimeMealAllowance: calcOvertimeMealAllowance(approvedOT),
-    overtimePay:         calcOvertimePay(baseSalary, approvedOT),
+    overtimePay:         calcOvertimePay(baseSalary, otSessions),
     transportAllowance:  Number(s.transportAllowance) || 0,
     phoneAllowance:      Number(s.phoneAllowance) || 0,
     businessTripFuel:    Number(s.businessTripFuel) || 0,

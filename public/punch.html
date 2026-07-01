@@ -444,6 +444,20 @@ async function submit() {
     try { data = await res.json(); } catch(e) { throw new Error(`伺服器錯誤 HTTP ${res.status}`); }
     if (!res.ok) throw new Error(data.error || `打卡失敗 (${res.status})`);
 
+    // 下班後有加班（平日晚於 17:00）→ 打完自動跳加班單
+    const hh = Number((data.time || '').slice(0, 2));
+    const [yy, mm, dd] = todayTaipei().split('-').map(Number);
+    const dow = new Date(Date.UTC(yy, mm - 1, dd)).getUTCDay();
+    const weekend = dow === 0 || dow === 6;
+    if (!isCheckin && hh >= 17 && !weekend) {
+      document.getElementById('success-title').textContent = '下班打卡成功！';
+      document.getElementById('success-time').textContent = `時間：${data.time}`;
+      document.getElementById('success-note').textContent = '請接著填加班單申報加班時段';
+      show('success');
+      setTimeout(() => openOvertime({ end: data.time }), 1800);
+      return;
+    }
+
     document.getElementById('success-title').textContent =
       data.title || (isCheckin ? '上班打卡成功！' : '下班打卡成功！');
     document.getElementById('success-time').textContent = `時間：${data.time}`;
@@ -525,10 +539,12 @@ function todayTaipei() {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Taipei' });
 }
 
-function openOvertime() {
+function openOvertime(prefill) {
   document.getElementById('ot-avatar').src = userProfile.pictureUrl || '';
   document.getElementById('ot-name').textContent = userProfile.displayName;
   document.getElementById('ot-date').value = todayTaipei();
+  document.getElementById('ot-start').value = '17:00';
+  if (prefill && prefill.end) document.getElementById('ot-end').value = prefill.end;
   const chips = document.getElementById('ot-reason-chips');
   chips.innerHTML = ['趕工出貨','生產排程','設備維修','盤點','臨時任務'].map(r =>
     `<button type="button" onclick="document.getElementById('ot-reason').value='${r}'" class="px-3 py-1.5 rounded-full text-sm border border-gray-200 text-gray-600 hover:bg-amber-50 hover:border-amber-300">${r}</button>`

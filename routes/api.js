@@ -5,7 +5,7 @@ const path = require('path');
 const router = express.Router();
 const db = require('../db');
 const client = require('../lineClient');
-const { getTaipeiTime, calcAnnualLeaveDays, isLate, getLateMinutes } = require('../utils');
+const { getTaipeiTime, calcAnnualLeaveDays, isLate, getLateMinutes, isWeekend, splitOT } = require('../utils');
 
 const LEAVE_TYPES = { annual: '特休假', sick: '病假', personal: '事假', other: '其他假別' };
 const PUNCH_REQ_LABELS = { checkin: '上班', checkout: '下班', ot_checkin: '加班上班', ot_checkout: '加班下班' };
@@ -349,6 +349,7 @@ router.get('/attendance', (req, res) => {
   if (month) records = records.filter(r => r.date.startsWith(month));
   if (lineId) records = records.filter(r => r.lineId === lineId);
 
+  const approvedOT = db.getAllOvertimeRequests().filter(o => o.status === 'approved');
   records = records.map(r => {
     const emp = employees.find(e => e.lineId === r.lineId);
     const segCount = Array.isArray(r.segments) ? r.segments.length : (r.checkIn ? 1 : 0);
@@ -356,7 +357,21 @@ router.get('/attendance', (req, res) => {
     const incomplete = Array.isArray(r.segments)
       ? r.segments.some(s => s.in && !s.out)
       : (!!r.checkIn && !r.checkOut);
-    return { ...r, employeeName: emp?.name || '未知', department: emp?.department || '', segmentCount: segCount, incomplete };
+    // 加班：平日＝加班單申報時段；週末（六日）＝整天工時
+    const weekend = isWeekend(r.date);
+    let otStart = null, otEnd = null, otHours = 0;
+    if (weekend) {
+      if (r.checkIn && Number(r.workHours) > 0) { otStart = r.checkIn; otEnd = r.checkOut; otHours = Number(r.workHours) || 0; }
+    } else {
+      const day = approvedOT.filter(o => o.lineId === r.lineId && o.date === r.date);
+      if (day.length) {
+        otStart = day[0].startTime; otEnd = day[day.length - 1].endTime;
+        otHours = day.reduce((s, o) => s + (Number(o.hours) || 0), 0);
+      }
+    }
+    const { ot134, ot167 } = splitOT(otHours);
+    return { ...r, employeeName: emp?.name || '未知', department: emp?.department || '', segmentCount: segCount, incomplete,
+             weekend, otStart, otEnd, otHours, ot134, ot167 };
   });
 
   res.json(records.sort((a, b) => b.date.localeCompare(a.date)));

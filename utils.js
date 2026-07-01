@@ -80,4 +80,18 @@ function calcAnnualLeaveDays(joinDate, override) {
   return Math.min(30, Math.floor(years) + 6);
 }
 
-module.exports = { getTaipeiTime, isLate, getLateMinutes, calcWorkHours, calcWorkHoursFromSegments, WEEKDAYS, calcAnnualLeaveDays };
+// 是否為週末（六、日）。用日期部件避免時區偏移
+function isWeekend(dateStr) {
+  if (!dateStr) return false;
+  const [y, m, d] = String(dateStr).split('-').map(Number);
+  const dow = new Date(Date.UTC(y, m - 1, d)).getUTCDay(); // 0=日, 6=六
+  return dow === 0 || dow === 6;
+}
+
+// 加班時數拆分：前 2 小時（×1.34）、2 小時之後（×1.67）
+function splitOT(hours) {
+  const h = Number(hours) || 0;
+  return { ot134: Math.min(h, 2), ot167: Math.max(0, h - 2) };
+}
+
+module.exports = { getTaipeiTime, isLate, getLateMinutes, calcWorkHours, calcWorkHoursFromSegments, WEEKDAYS, calcAnnualLeaveDays, isWeekend, splitOT };
