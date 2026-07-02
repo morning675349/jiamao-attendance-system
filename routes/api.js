@@ -143,13 +143,15 @@ router.post('/liff/punch', async (req, res) => {
     } else {
       res.json({ time, title: '回來上班！', note: '已繼續計時，外出時間不計入工時' });
     }
-    const tag = result._firstCheckIn ? '上班打卡' : '回來上班';
-    db.getAllEmployees().filter(e => e.role === 'admin').forEach(admin => {
-      client.pushMessage({
-        to: admin.lineId,
-        messages: [{ type: 'text', text: `📍 打卡通知\n${employee.name} ${tag}\n時間：${time}${late ? ' ⚠️遲到' : ''}${location ? '\n📍 GPS 已記錄' : ''}` }]
-      }).catch(console.error);
-    });
+    // 只在「遲到」時通知管理員（節省 LINE 推播額度）；例行打卡看後台或每日彙總
+    if (result._firstCheckIn && late) {
+      db.getAllEmployees().filter(e => e.role === 'admin').forEach(admin => {
+        client.pushMessage({
+          to: admin.lineId,
+          messages: [{ type: 'text', text: `⚠️ 遲到通知\n${employee.name} 上班打卡\n時間：${time}（規定 ${workStart}）` }]
+        }).catch(console.error);
+      });
+    }
   } else {
     // 不在上班狀態 → 不能打下班/外出卡
     if (!onShift) {
@@ -159,12 +161,7 @@ router.post('/liff/punch', async (req, res) => {
     const result = db.checkOut(lineId, date, time, location);
     if (result.error) return res.status(400).json({ error: result.error });
     res.json({ time, workHours: result.workHours, note: '若只是外出，回來請再按「上班打卡」' });
-    db.getAllEmployees().filter(e => e.role === 'admin').forEach(admin => {
-      client.pushMessage({
-        to: admin.lineId,
-        messages: [{ type: 'text', text: `📍 打卡通知\n${employee.name} 下班/外出打卡\n時間：${time}\n⏱️ 今日累計工時：${result.workHours} 小時${location ? '\n📍 GPS 已記錄' : ''}` }]
-      }).catch(console.error);
-    });
+    // 下班/外出為例行打卡，不推播（管理員看後台出勤記錄或每日彙總）；節省 LINE 額度
   }
 });
 

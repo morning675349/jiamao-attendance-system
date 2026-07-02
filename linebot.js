@@ -335,12 +335,15 @@ async function doCheckIn(event, lineId, employee, location) {
   const title = isFirst ? '✅ 上班打卡成功！' : '✅ 回來上班！';
   await reply(event.replyToken, `${title}\n\n👤 ${employee.name}\n📅 ${date}（週${WEEKDAYS[new Date(date).getDay()]}）\n🕐 ${time}${lateMsg}${gpsMsg}`);
 
-  getAdminIds().forEach(adminId => {
-    client.pushMessage({
-      to: adminId,
-      messages: [{ type: 'text', text: `📍 打卡通知\n${employee.name} ${isFirst ? '已上班打卡' : '回來上班'}\n時間：${time}${showLate ? ' ⚠️遲到' : ''}` }]
-    }).catch(console.error);
-  });
+  // 只在「遲到」時通知管理員（節省 LINE 額度）；例行打卡看後台或每日彙總
+  if (showLate) {
+    getAdminIds().forEach(adminId => {
+      client.pushMessage({
+        to: adminId,
+        messages: [{ type: 'text', text: `⚠️ 遲到通知\n${employee.name} 上班打卡\n時間：${time}（規定 ${process.env.WORK_START || '09:00'}）` }]
+      }).catch(console.error);
+    });
+  }
 }
 
 async function doCheckOut(event, lineId, employee, location) {
@@ -353,13 +356,7 @@ async function doCheckOut(event, lineId, employee, location) {
 
   const gpsMsg = location ? '\n📍 位置已記錄' : '';
   await reply(event.replyToken, `✅ 下班打卡成功！\n\n👤 ${employee.name}\n📅 ${date}\n🕕 ${time}\n⏱️ 今日累計工時：${result.workHours} 小時${gpsMsg}\n\n（若只是外出，回來請按「上班打卡」）`);
-
-  getAdminIds().forEach(adminId => {
-    client.pushMessage({
-      to: adminId,
-      messages: [{ type: 'text', text: `📍 打卡通知\n${employee.name} 已下班打卡\n時間：${time}\n⏱️ 今日工時：${result.workHours} 小時` }]
-    }).catch(console.error);
-  });
+  // 下班/外出為例行打卡，不推播（管理員看後台或每日彙總）；節省 LINE 額度
 }
 
 // ── 選單 ─────────────────────────────────────────────
