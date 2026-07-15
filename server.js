@@ -1,4 +1,16 @@
 require('dotenv').config();
+
+// 未接住的例外會讓 Node process 悄悄當掉，PM2 若短時間內重試多次會放棄重啟
+// 這裡先記錄再乾淨地結束，讓 PM2 用正常流程重啟一次
+process.on('uncaughtException', (err) => {
+  console.error('💥 Uncaught Exception:', err);
+  process.exit(1);
+});
+process.on('unhandledRejection', (err) => {
+  console.error('💥 Unhandled Rejection:', err);
+  process.exit(1);
+});
+
 const express = require('express');
 const line = require('@line/bot-sdk');
 const path = require('path');
