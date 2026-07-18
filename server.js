@@ -62,6 +62,14 @@ app.get('/punch', (req, res) => {
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/', (req, res) => res.redirect('/admin.html'));
 
+// 全域錯誤處理（必須放在所有路由之後）：
+// 避免未被路由內 try/catch 接住的例外，被 Express 預設錯誤頁印出完整 stack trace 給前端
+app.use((err, req, res, next) => {
+  console.error('Unhandled route error:', err);
+  if (res.headersSent) return next(err);
+  res.status(err.status || 500).json({ error: '伺服器發生錯誤，請稍後再試' });
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`\n🚀 打卡系統已啟動`);

@@ -314,6 +314,19 @@
 let token = '';
 let companies = [];
 let currentSlipId = '';
+
+// ── HTML/JS escaping helpers（防 XSS：員工可控文字如姓名/請假原因等）──
+function esc(s) {
+  return String(s === null || s === undefined ? '' : s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+function jsArg(v) {
+  return JSON.stringify(v === undefined ? null : v).replace(/"/g, '&quot;');
+}
 const now = new Date();
 const curMonth = now.toISOString().slice(0,7);
 
@@ -379,14 +392,14 @@ async function loadSalarySettings() {
     const co = companies.find(c => c.id === s.companyId);
     const tag = s.companyId === 'jiamao' ? 'tag-jiamao' : s.companyId === 'shengxing' ? 'tag-shengxing' : '';
     return `<tr>
-      <td>${e.name}</td>
-      <td>${e.department||'-'}</td>
-      <td><span class="company-tag ${tag}">${co?.name||'未設定'}</span></td>
+      <td>${esc(e.name)}</td>
+      <td>${esc(e.department||'-')}</td>
+      <td><span class="company-tag ${tag}">${esc(co?.name||'未設定')}</span></td>
       <td class="amount">${s.baseSalary ? '$'+Number(s.baseSalary).toLocaleString() : '<span style="color:#aaa">未設定</span>'}</td>
       <td class="amount">${s.jobAllowance ? '$'+Number(s.jobAllowance).toLocaleString() : '-'}</td>
       <td class="amount">${s.insuranceBracket ? Number(s.insuranceBracket).toLocaleString() : '-'}</td>
       <td>${s.dependentCount || 0}</td>
-      <td><button class="btn btn-outline btn-sm" onclick="openSalaryModal('${e.lineId}','${e.name}')">✏️ 編輯</button></td>
+      <td><button class="btn btn-outline btn-sm" onclick="openSalaryModal(${jsArg(e.lineId)},${jsArg(e.name)})">✏️ 編輯</button></td>
     </tr>`;
   }).join('');
 }
@@ -436,11 +449,11 @@ async function loadOvertimeRequests() {
     const statusTxt = r.status==='pending'?'待審核':r.status==='approved'?'已核准':'已駁回';
     const canReview = r.status === 'pending';
     return `<tr>
-      <td>${r.employeeName}</td>
+      <td>${esc(r.employeeName)}</td>
       <td>${r.date}</td>
       <td>${r.startTime}～${r.endTime}</td>
       <td style="font-weight:600">${r.hours}H</td>
-      <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.reason}">${r.reason}</td>
+      <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(r.reason)}">${esc(r.reason)}</td>
       <td><span class="badge ${badge}">${statusTxt}</span></td>
       <td style="color:#999;font-size:11px">${r.createdAt?.slice(0,10)||''}</td>
       <td>${canReview ? `<button class="btn btn-primary btn-sm" onclick="openOTModal(${JSON.stringify(r).replace(/"/g,'&quot;')})">審核</button>` : (r.reviewNote?`<span style="color:#888;font-size:11px">${r.reviewNote}</span>`:'-')}</td>
@@ -452,10 +465,10 @@ function openOTModal(r) {
   document.getElementById('ot_id').value = r.id;
   document.getElementById('ot_note').value = '';
   document.getElementById('otModalContent').innerHTML = `
-    <b>${r.employeeName}</b> 申請加班<br>
+    <b>${esc(r.employeeName)}</b> 申請加班<br>
     日期：${r.date}<br>
     時段：${r.startTime} ～ ${r.endTime}（${r.hours}H）<br>
-    原因：${r.reason}
+    原因：${esc(r.reason)}
   `;
   openModal('otModal');
 }
@@ -506,8 +519,8 @@ async function loadPayrolls() {
       const badge = p.status==='confirmed'?'badge-confirmed':'badge-draft';
       const statusTxt = p.status==='confirmed'?'已確認':'草稿';
       return `<tr>
-        <td>${p.employeeName}</td>
-        <td>${p.department||'-'}</td>
+        <td>${esc(p.employeeName)}</td>
+        <td>${esc(p.department||'-')}</td>
         <td class="amount">$${(p.totalIncome||0).toLocaleString()}</td>
         <td class="amount" style="color:#ea4335">-$${(p.totalDeductions||0).toLocaleString()}</td>
         <td class="amount" style="font-weight:700;color:#1a73e8">$${(p.netSalary||0).toLocaleString()}</td>
@@ -637,8 +650,8 @@ function preparePrint(p, co) {
     <div class="slip-title">${co?.name||''}</div>
     <div class="slip-subtitle">${p.year}年 ${p.month}月　薪資單</div>
     <div class="slip-meta">
-      <span>員工姓名：${p.employeeName}</span>
-      <span>部門：${p.department||'-'}</span>
+      <span>員工姓名：${esc(p.employeeName)}</span>
+      <span>部門：${esc(p.department||'-')}</span>
       <span>出勤日數：${p.summary?.attendanceDays||0}</span>
       <span>加班時數：${p.summary?.totalOTHours||0}</span>
     </div>

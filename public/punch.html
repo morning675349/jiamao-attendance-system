@@ -349,7 +349,11 @@ async function init() {
     document.getElementById('emp-avatar').src = userProfile.pictureUrl || '';
     document.getElementById('emp-name').textContent = userProfile.displayName;
 
-    fetch('/api/emp-info?lineId=' + userProfile.userId)
+    fetch('/api/liff/emp-info', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ accessToken })
+    })
       .then(r => r.json())
       .then(e => { if (e.department) document.getElementById('emp-dept').textContent = e.department; })
       .catch(() => {});

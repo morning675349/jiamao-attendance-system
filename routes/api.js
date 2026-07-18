@@ -56,10 +56,41 @@ function verifyLineToken(accessToken) {
 }
 
 // ── Auth ───────────────────────────────────────────────
-router.post('/login', (req, res) => {
+// 登入嘗試限制（防暴力破解 ADMIN_PASSWORD）：同一 IP 15 分鐘內最多 5 次失敗嘗試
+const LOGIN_MAX_ATTEMPTS = 5;
+const LOGIN_WINDOW_MS = 15 * 60 * 1000;
+const loginAttempts = new Map(); // ip -> { count, firstAttemptAt }
+
+function loginRateLimit(req, res, next) {
+  const ip = req.ip || req.connection?.remoteAddress || 'unknown';
+  const now = Date.now();
+  const entry = loginAttempts.get(ip);
+  if (entry && now - entry.firstAttemptAt < LOGIN_WINDOW_MS && entry.count >= LOGIN_MAX_ATTEMPTS) {
+    const retryAfterSec = Math.ceil((LOGIN_WINDOW_MS - (now - entry.firstAttemptAt)) / 1000);
+    res.set('Retry-After', String(retryAfterSec));
+    return res.status(429).json({ error: `登入嘗試過多，請於 ${Math.ceil(retryAfterSec / 60)} 分鐘後再試` });
+  }
+  next();
+}
+
+// 定期清理過期紀錄，避免 Map 無限成長（單一 process 記憶體內限流；若未來改多 process/cluster 部署需改共用儲存）
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, entry] of loginAttempts) {
+    if (now - entry.firstAttemptAt > LOGIN_WINDOW_MS) loginAttempts.delete(ip);
+  }
+}, 10 * 60 * 1000).unref();
+
+router.post('/login', loginRateLimit, (req, res) => {
+  const ip = req.ip || req.connection?.remoteAddress || 'unknown';
   if (req.body.password === process.env.ADMIN_PASSWORD) {
+    loginAttempts.delete(ip);
     res.json({ token: process.env.ADMIN_TOKEN });
   } else {
+    const entry = loginAttempts.get(ip) || { count: 0, firstAttemptAt: Date.now() };
+    if (Date.now() - entry.firstAttemptAt >= LOGIN_WINDOW_MS) { entry.count = 0; entry.firstAttemptAt = Date.now(); }
+    entry.count += 1;
+    loginAttempts.set(ip, entry);
     res.status(401).json({ error: '密碼錯誤' });
   }
 });
@@ -165,8 +196,17 @@ router.post('/liff/punch', async (req, res) => {
   }
 });
 
-router.get('/emp-info', (req, res) => {
-  const emp = db.getEmployee(req.query.lineId);
+// 需以 accessToken 驗證身分才能查詢（避免任意帶他人 lineId 查到姓名/部門，IDOR）
+router.post('/liff/emp-info', async (req, res) => {
+  const { accessToken } = req.body || {};
+  if (!accessToken) return res.status(400).json({ error: '缺少 accessToken' });
+  let profile;
+  try {
+    profile = await verifyLineToken(accessToken);
+  } catch (e) {
+    return res.status(401).json({ error: 'LINE Token 無效，請重新開啟頁面' });
+  }
+  const emp = db.getEmployee(profile.userId);
   res.json(emp ? { name: emp.name, department: emp.department } : {});
 });
 
@@ -295,9 +335,9 @@ router.post('/liff/leave-request', async (req, res) => {
   res.json(leave);
 });
 
-// 請假證明文件（需 admin token；可用 ?token= 方便後台 <img>/<a> 直接連）
+// 請假證明文件（需 admin token；一律走 header，避免 token 出現在網址/日誌/瀏覽紀錄中）
 router.get('/leaves/:id/document', (req, res) => {
-  const t = req.headers['x-admin-token'] || req.query.token;
+  const t = req.headers['x-admin-token'];
   if (t !== process.env.ADMIN_TOKEN) return res.status(401).json({ error: '未授權' });
   const leave = db.getLeaveById(req.params.id);
   if (!leave || !leave.documentPath) return res.status(404).json({ error: '查無證明文件' });

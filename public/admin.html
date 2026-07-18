@@ -648,6 +648,19 @@ let editingLineId = null;
 let attRecords = [];
 let editingAttId = null;
 
+// ── HTML/JS escaping helpers（防 XSS：員工可控文字如姓名/請假原因等）──
+function esc(s) {
+  return String(s === null || s === undefined ? '' : s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+function jsArg(v) {
+  return JSON.stringify(v === undefined ? null : v).replace(/"/g, '&quot;');
+}
+
 const LEAVE_LABELS = { annual: '特休假', sick: '病假', personal: '事假', other: '其他假別' };
 
 // ── Auth ──────────────────────────────────────────────
@@ -772,8 +785,8 @@ async function loadDashboard() {
   }
   tbody.innerHTML = emps.map(e => `
     <tr class="border-t hover:bg-gray-50 transition">
-      <td class="px-4 py-2.5 font-medium">${e.name}</td>
-      <td class="px-4 py-2.5 text-gray-400 text-xs">${e.department}</td>
+      <td class="px-4 py-2.5 font-medium">${esc(e.name)}</td>
+      <td class="px-4 py-2.5 text-gray-400 text-xs">${esc(e.department)}</td>
       <td class="px-4 py-2.5">${e.rec?.checkIn ? `<span class="text-green-600 font-mono">${e.rec.checkIn}</span>` : '<span class="text-gray-200">--:--</span>'}</td>
       <td class="px-4 py-2.5">${e.rec?.checkOut ? `<span class="text-yellow-700 font-mono">${e.rec.checkOut}</span>` : '<span class="text-gray-200">--:--</span>'}</td>
       <td class="px-4 py-2.5">${badge(e.rec?.checkIn, e.rec?.status)}</td>
@@ -789,7 +802,7 @@ async function initAtt() {
   allEmployees = employees;
   const sel = document.getElementById('att-emp');
   sel.innerHTML = '<option value="">所有員工</option>' +
-    employees.filter(e => e.role === 'employee').map(e => `<option value="${e.lineId}">${e.name}</option>`).join('');
+    employees.filter(e => e.role === 'employee').map(e => `<option value="${e.lineId}">${esc(e.name)}</option>`).join('');
   loadAtt();
 }
 
@@ -825,8 +838,8 @@ async function loadAtt() {
     return `
     <tr class="border-t hover:bg-gray-50 transition">
       <td class="px-4 py-2.5 font-mono text-xs">${r.date}</td>
-      <td class="px-4 py-2.5 font-medium">${r.employeeName}</td>
-      <td class="px-4 py-2.5 text-gray-400 text-xs">${r.department}</td>
+      <td class="px-4 py-2.5 font-medium">${esc(r.employeeName)}</td>
+      <td class="px-4 py-2.5 text-gray-400 text-xs">${esc(r.department)}</td>
       <td class="px-4 py-2.5 text-green-600 font-mono text-xs">${r.checkIn || '--:--'}</td>
       <td class="px-4 py-2.5 font-mono text-xs">${r.incomplete ? '<span class="text-red-500">⚠️ 未完成</span>' : `<span class="text-yellow-700">${r.checkOut || '--:--'}</span>`}${outBadge}</td>
       <td class="px-4 py-2.5 font-mono text-xs">${r.otStart ? `<span class="text-orange-600">${r.otStart}–${r.otEnd || '?'}</span>${r.weekend ? '<span class="ml-1 text-[10px] text-red-500">六日</span>' : ''}` : '<span class="text-gray-200">-</span>'}</td>
@@ -855,7 +868,7 @@ function openAttModal(id) {
   const empSel = document.getElementById('att-edit-emp');
 
   empSel.innerHTML = allEmployees.filter(e => e.role === 'employee')
-    .map(e => `<option value="${e.lineId}">${e.name}</option>`).join('');
+    .map(e => `<option value="${e.lineId}">${esc(e.name)}</option>`).join('');
 
   if (id) {
     title.textContent = '編輯出勤記錄';
@@ -971,11 +984,11 @@ async function loadLeaves(status) {
   tbody.innerHTML = leaves.map(l => `
     <tr class="border-t hover:bg-gray-50 transition">
       <td class="px-4 py-2.5 text-xs text-gray-400 font-mono">${l.createdAt.slice(0, 10)}</td>
-      <td class="px-4 py-2.5 font-medium">${l.employeeName}</td>
-      <td class="px-4 py-2.5 text-gray-400 text-xs">${l.department}</td>
+      <td class="px-4 py-2.5 font-medium">${esc(l.employeeName)}</td>
+      <td class="px-4 py-2.5 text-gray-400 text-xs">${esc(l.department)}</td>
       <td class="px-4 py-2.5 font-mono text-xs">${l.date}</td>
-      <td class="px-4 py-2.5">${LEAVE_LABELS[l.type] || l.type}${l.hasDocument ? `<a href="/api/leaves/${l.id}/document?token=${encodeURIComponent(token)}" target="_blank" class="block mt-1 text-xs text-blue-600 hover:underline">📎 查看證明</a>` : (l.type === 'sick' ? '<span class="block mt-1 text-xs text-red-400">無證明</span>' : '')}</td>
-      <td class="px-4 py-2.5 text-gray-500 max-w-xs truncate text-xs">${l.reason}</td>
+      <td class="px-4 py-2.5">${LEAVE_LABELS[l.type] || l.type}${l.hasDocument ? `<a href="javascript:void(0)" onclick="viewLeaveDocument(${jsArg(l.id)})" class="block mt-1 text-xs text-blue-600 hover:underline">📎 查看證明</a>` : (l.type === 'sick' ? '<span class="block mt-1 text-xs text-red-400">無證明</span>' : '')}</td>
+      <td class="px-4 py-2.5 text-gray-500 max-w-xs truncate text-xs">${esc(l.reason)}</td>
       <td class="px-4 py-2.5">
         ${status === 'pending' ? `
           <button onclick="reviewLeave('${l.id}','approved')"
@@ -996,6 +1009,22 @@ async function reviewLeave(id, status) {
   loadLeaves(currentLeafStatus);
 }
 
+// 以 header 帶 token 取得證明文件，避免把 ADMIN_TOKEN 暴露在網址列/瀏覽紀錄/伺服器日誌中
+async function viewLeaveDocument(id) {
+  try {
+    const res = await fetch('/api/leaves/' + encodeURIComponent(id) + '/document', {
+      headers: { 'x-admin-token': token }
+    });
+    if (!res.ok) { alert('無法載入證明文件'); return; }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  } catch (e) {
+    alert('證明文件載入失敗');
+  }
+}
+
 // ── Employees ─────────────────────────────────────────
 async function loadEmployees() {
   const employees = await api('/employees');
@@ -1010,8 +1039,8 @@ async function loadEmployees() {
 
   tbody.innerHTML = employees.map(e => `
     <tr class="border-t hover:bg-gray-50 transition">
-      <td class="px-4 py-2.5 font-medium">${e.name}</td>
-      <td class="px-4 py-2.5 text-gray-400 text-xs">${e.department}</td>
+      <td class="px-4 py-2.5 font-medium">${esc(e.name)}</td>
+      <td class="px-4 py-2.5 text-gray-400 text-xs">${esc(e.department)}</td>
       <td class="px-4 py-2.5">
         <span class="px-2 py-0.5 rounded text-xs font-medium ${e.role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-500'}">
           ${roleLabel[e.role] || e.role}
@@ -1020,9 +1049,9 @@ async function loadEmployees() {
       <td class="px-4 py-2.5 text-gray-300 text-xs font-mono">${e.lineId}</td>
       <td class="px-4 py-2.5 text-gray-400 text-xs">${e.createdAt ? e.createdAt.slice(0, 10) : '-'}</td>
       <td class="px-4 py-2.5 flex gap-3">
-        <button onclick="editEmp(this)" data-lineid="${e.lineId}" data-name="${e.name}" data-dept="${e.department}" data-role="${e.role}"
+        <button onclick="editEmp(this)" data-lineid="${e.lineId}" data-name="${esc(e.name)}" data-dept="${esc(e.department)}" data-role="${esc(e.role)}"
           class="text-yellow-600 text-xs hover:text-yellow-700 hover:underline transition">編輯</button>
-        <button onclick="deleteEmp('${e.lineId}','${e.name}')"
+        <button onclick="deleteEmp(${jsArg(e.lineId)},${jsArg(e.name)})"
           class="text-red-400 text-xs hover:text-red-600 hover:underline transition">刪除</button>
       </td>
     </tr>
@@ -1131,12 +1160,12 @@ async function loadAnnouncements() {
       <div class="flex items-start justify-between gap-4">
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-2 mb-1">
-            <span class="font-semibold text-gray-800">${a.title}</span>
+            <span class="font-semibold text-gray-800">${esc(a.title)}</span>
             <span class="text-xs px-2 py-0.5 rounded-full ${a.active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400'}">
               ${a.active ? '顯示中' : '已隱藏'}
             </span>
           </div>
-          <p class="text-sm text-gray-600 whitespace-pre-wrap leading-relaxed">${a.content}</p>
+          <p class="text-sm text-gray-600 whitespace-pre-wrap leading-relaxed">${esc(a.content)}</p>
           ${a.imagePath ? `<img src="/api/announcement-image/${a.id}" class="mt-2 max-h-40 rounded-lg border border-gray-200">` : ''}
           <p class="text-xs text-gray-300 mt-2">${a.createdAt.slice(0,10)} 建立</p>
         </div>
@@ -1149,7 +1178,7 @@ async function loadAnnouncements() {
             class="bg-gray-50 text-gray-600 px-3 py-1.5 rounded-lg text-xs hover:bg-gray-100 transition">
             編輯
           </button>
-          <button onclick="deleteAnn('${a.id}','${a.title}')"
+          <button onclick="deleteAnn(${jsArg(a.id)},${jsArg(a.title)})"
             class="bg-red-50 text-red-500 px-3 py-1.5 rounded-lg text-xs hover:bg-red-100 transition">
             刪除
           </button>
@@ -1243,8 +1272,8 @@ async function loadPunchReqs(status) {
   tbody.innerHTML = reqs.map(r => `
     <tr class="border-t hover:bg-gray-50 transition">
       <td class="px-4 py-2.5 text-xs text-gray-400 font-mono">${r.createdAt.slice(0, 10)}</td>
-      <td class="px-4 py-2.5 font-medium">${r.employeeName}</td>
-      <td class="px-4 py-2.5 text-gray-400 text-xs">${r.department}</td>
+      <td class="px-4 py-2.5 font-medium">${esc(r.employeeName)}</td>
+      <td class="px-4 py-2.5 text-gray-400 text-xs">${esc(r.department)}</td>
       <td class="px-4 py-2.5">
         <span class="px-2 py-0.5 rounded text-xs font-medium ${(r.type === 'checkin' || r.type === 'ot_checkin') ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}">
           ${typeLabel[r.type] || r.type}
@@ -1252,7 +1281,7 @@ async function loadPunchReqs(status) {
       </td>
       <td class="px-4 py-2.5 font-mono text-xs">${r.date}</td>
       <td class="px-4 py-2.5 font-mono text-xs font-bold">${r.requestedTime}</td>
-      <td class="px-4 py-2.5 text-gray-500 max-w-xs truncate text-xs" title="${r.reason}">${r.reason}</td>
+      <td class="px-4 py-2.5 text-gray-500 max-w-xs truncate text-xs" title="${esc(r.reason)}">${esc(r.reason)}</td>
       <td class="px-4 py-2.5">
         ${status === 'pending' ? `
           <button onclick="reviewPunchReq('${r.id}','approved')"
@@ -1354,8 +1383,8 @@ async function loadAnnual() {
     const barColor = pct >= 80 ? 'bg-red-400' : pct >= 50 ? 'bg-amber-400' : 'bg-emerald-400';
 
     return `<tr class="border-t hover:bg-gray-50 transition">
-      <td class="px-4 py-3 font-medium">${e.name}</td>
-      <td class="px-4 py-3 text-gray-400 text-xs">${e.department}</td>
+      <td class="px-4 py-3 font-medium">${esc(e.name)}</td>
+      <td class="px-4 py-3 text-gray-400 text-xs">${esc(e.department)}</td>
       <td class="px-4 py-3 text-xs font-mono">${joinLabel}</td>
       <td class="px-4 py-3 text-xs">${yearsLabel}</td>
       <td class="px-4 py-3 text-center">
@@ -1373,7 +1402,7 @@ async function loadAnnual() {
         </div>
       </td>
       <td class="px-4 py-3">
-        <button onclick="openModal('${e.lineId}','${e.name}','${e.joinDate || ''}','${e.annualLeaveOverride ?? ''}')"
+        <button onclick="openModal(${jsArg(e.lineId)},${jsArg(e.name)},${jsArg(e.joinDate || '')},${jsArg(e.annualLeaveOverride ?? '')})"
           class="text-yellow-700 text-xs hover:underline">編輯</button>
       </td>
     </tr>`;
@@ -1451,14 +1480,14 @@ async function loadPayrollSettings() {
     const co = payrollCompanies.find(c => c.id === s.companyId);
     const coColor = s.companyId === 'jiamao' ? 'bg-blue-100 text-blue-700' : s.companyId === 'shengxing' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-500';
     return `<tr class="border-b border-gray-50 hover:bg-gray-50">
-      <td class="px-4 py-3 font-medium">${e.name}</td>
-      <td class="px-4 py-3 text-gray-500">${e.department||'-'}</td>
-      <td class="px-4 py-3"><span class="px-2 py-0.5 rounded text-xs font-semibold ${coColor}">${co?.name||'未設定'}</span></td>
+      <td class="px-4 py-3 font-medium">${esc(e.name)}</td>
+      <td class="px-4 py-3 text-gray-500">${esc(e.department||'-')}</td>
+      <td class="px-4 py-3"><span class="px-2 py-0.5 rounded text-xs font-semibold ${coColor}">${esc(co?.name||'未設定')}</span></td>
       <td class="px-4 py-3 font-mono">${s.baseSalary ? '$'+Number(s.baseSalary).toLocaleString() : '<span class="text-gray-300">未設定</span>'}</td>
       <td class="px-4 py-3 font-mono">${s.jobAllowance ? '$'+Number(s.jobAllowance).toLocaleString() : '-'}</td>
       <td class="px-4 py-3 font-mono">${s.insuranceBracket ? Number(s.insuranceBracket).toLocaleString() : '-'}</td>
       <td class="px-4 py-3">${s.dependentCount||0}</td>
-      <td class="px-4 py-3"><button class="text-xs px-3 py-1.5 border border-gray-200 rounded-lg hover:bg-gray-50" onclick="openSalaryModal('${e.lineId}','${e.name}')">✏️ 編輯</button></td>
+      <td class="px-4 py-3"><button class="text-xs px-3 py-1.5 border border-gray-200 rounded-lg hover:bg-gray-50" onclick="openSalaryModal(${jsArg(e.lineId)},${jsArg(e.name)})">✏️ 編輯</button></td>
     </tr>`;
   }).join('');
 }
@@ -1546,12 +1575,12 @@ async function loadOvertime() {
     const badgeClass = r.status==='pending' ? 'bg-amber-100 text-amber-700' : r.status==='approved' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700';
     const statusTxt = r.status==='pending'?'待審核':r.status==='approved'?'已核准':'已駁回';
     return `<tr class="border-b border-gray-50 hover:bg-gray-50">
-      <td class="px-4 py-3 font-medium">${r.employeeName}</td>
+      <td class="px-4 py-3 font-medium">${esc(r.employeeName)}</td>
       <td class="px-4 py-3">${r.date}</td>
       <td class="px-4 py-3">${r.startTime}～${r.endTime}</td>
       <td class="px-4 py-3 font-semibold">${r.hours}H</td>
       <td class="px-4 py-3">${r.meal ? '<span class="text-green-600">有吃🍱</span>' : '<span class="text-orange-600">沒吃（補津貼）</span>'}</td>
-      <td class="px-4 py-3 text-gray-500 max-w-xs truncate" title="${r.reason}">${r.reason}</td>
+      <td class="px-4 py-3 text-gray-500 max-w-xs truncate" title="${esc(r.reason)}">${esc(r.reason)}</td>
       <td class="px-4 py-3"><span class="px-2 py-0.5 rounded text-xs font-semibold ${badgeClass}">${statusTxt}</span></td>
       <td class="px-4 py-3">${r.status==='pending' ? `<button class="text-xs px-3 py-1.5 btn-gold rounded-lg" onclick='openOTReview(${JSON.stringify(r)})'>審核</button>` : (r.reviewNote||'-')}</td>
     </tr>`;
@@ -1561,7 +1590,7 @@ async function loadOvertime() {
 let reviewingOTId = '';
 function openOTReview(r) {
   reviewingOTId = r.id;
-  document.getElementById('ot-modal-content').innerHTML = `<b>${r.employeeName}</b> 申請加班<br>日期：${r.date}<br>時段：${r.startTime}～${r.endTime}（${r.hours}H）<br>原因：${r.reason}`;
+  document.getElementById('ot-modal-content').innerHTML = `<b>${esc(r.employeeName)}</b> 申請加班<br>日期：${esc(r.date)}<br>時段：${esc(r.startTime)}～${esc(r.endTime)}（${r.hours}H）<br>原因：${esc(r.reason)}`;
   document.getElementById('ot-note').value = '';
   document.getElementById('ot-modal').classList.remove('hidden');
 }
@@ -1620,8 +1649,8 @@ async function loadPayrollCalc() {
       const badgeClass = p.status==='confirmed' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700';
       const statusTxt = p.status==='confirmed'?'已確認':'草稿';
       return `<tr class="border-b border-gray-50 hover:bg-gray-50">
-        <td class="px-4 py-3 font-medium">${p.employeeName}</td>
-        <td class="px-4 py-3 text-gray-500">${p.department||'-'}</td>
+        <td class="px-4 py-3 font-medium">${esc(p.employeeName)}</td>
+        <td class="px-4 py-3 text-gray-500">${esc(p.department||'-')}</td>
         <td class="px-4 py-3 font-mono">\$${(p.totalIncome||0).toLocaleString()}</td>
         <td class="px-4 py-3 font-mono text-red-500">-\$${(p.totalDeductions||0).toLocaleString()}</td>
         <td class="px-4 py-3 font-mono font-bold text-blue-600">\$${(p.netSalary||0).toLocaleString()}</td>
@@ -1749,7 +1778,7 @@ function preparePrintArea(p, co) {
     const [il,iv]=allInc[i]||['',''];const [dl,dv]=allDed[i]||['',''];
     rows+=`<tr><td style="border:1px solid #999;padding:4px 6px;font-size:11px">${il}</td><td style="border:1px solid #999;padding:4px 6px;font-size:11px;text-align:right">${iv?'$'+Number(iv).toLocaleString():''}</td><td style="border:1px solid #999;padding:4px 6px;font-size:11px">${dl}</td><td style="border:1px solid #999;padding:4px 6px;font-size:11px;text-align:right">${dv!==undefined&&dv!==''?'$'+Number(dv).toLocaleString():''}</td></tr>`;
   }
-  document.getElementById('print-area').innerHTML = `<div style="font-family:'Noto Sans TC',sans-serif;padding:20px;font-size:12px"><div style="text-align:center;font-size:16px;font-weight:700;margin-bottom:4px">${co?.name||''}</div><div style="text-align:center;font-size:13px;color:#555;margin-bottom:12px">${p.year}年 ${p.month}月　薪資單</div><div style="display:flex;gap:40px;margin-bottom:8px;font-size:12px"><span>員工姓名：${p.employeeName}</span><span>部門：${p.department||'-'}</span><span>出勤日數：${p.summary?.attendanceDays||0}</span><span>加班時數：${p.summary?.totalOTHours||0}</span></div><table style="width:100%;border-collapse:collapse"><thead><tr><th style="border:1px solid #999;padding:4px 6px;font-size:11px;background:#f5f5f5">應付薪資項目</th><th style="border:1px solid #999;padding:4px 6px;font-size:11px;background:#f5f5f5">金額</th><th style="border:1px solid #999;padding:4px 6px;font-size:11px;background:#f5f5f5">應扣薪資項目</th><th style="border:1px solid #999;padding:4px 6px;font-size:11px;background:#f5f5f5">金額</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td colspan="2" style="border:1px solid #999;padding:4px 6px;font-size:11px;font-weight:700">應付合計：$${(p.totalIncome||0).toLocaleString()}</td><td colspan="2" style="border:1px solid #999;padding:4px 6px;font-size:11px;font-weight:700">應扣合計：$${(p.totalDeductions||0).toLocaleString()}</td></tr><tr><td colspan="2" style="border:1px solid #999;padding:6px;font-size:13px;font-weight:700">實領薪資：$${(p.netSalary||0).toLocaleString()}</td><td colspan="2" style="border:1px solid #999;padding:6px;font-size:11px">${p.notes?'備注：'+p.notes:''}</td></tr></tfoot></table><div style="margin-top:8px;font-size:10px;color:#888;border-top:1px solid #ccc;padding-top:6px">*遲到以月薪÷240換算時薪×分鐘數扣除　*病假有醫療證明扣半薪，無證明以事假論</div></div>`;
+  document.getElementById('print-area').innerHTML = `<div style="font-family:'Noto Sans TC',sans-serif;padding:20px;font-size:12px"><div style="text-align:center;font-size:16px;font-weight:700;margin-bottom:4px">${co?.name||''}</div><div style="text-align:center;font-size:13px;color:#555;margin-bottom:12px">${p.year}年 ${p.month}月　薪資單</div><div style="display:flex;gap:40px;margin-bottom:8px;font-size:12px"><span>員工姓名：${esc(p.employeeName)}</span><span>部門：${esc(p.department||'-')}</span><span>出勤日數：${p.summary?.attendanceDays||0}</span><span>加班時數：${p.summary?.totalOTHours||0}</span></div><table style="width:100%;border-collapse:collapse"><thead><tr><th style="border:1px solid #999;padding:4px 6px;font-size:11px;background:#f5f5f5">應付薪資項目</th><th style="border:1px solid #999;padding:4px 6px;font-size:11px;background:#f5f5f5">金額</th><th style="border:1px solid #999;padding:4px 6px;font-size:11px;background:#f5f5f5">應扣薪資項目</th><th style="border:1px solid #999;padding:4px 6px;font-size:11px;background:#f5f5f5">金額</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td colspan="2" style="border:1px solid #999;padding:4px 6px;font-size:11px;font-weight:700">應付合計：$${(p.totalIncome||0).toLocaleString()}</td><td colspan="2" style="border:1px solid #999;padding:4px 6px;font-size:11px;font-weight:700">應扣合計：$${(p.totalDeductions||0).toLocaleString()}</td></tr><tr><td colspan="2" style="border:1px solid #999;padding:6px;font-size:13px;font-weight:700">實領薪資：$${(p.netSalary||0).toLocaleString()}</td><td colspan="2" style="border:1px solid #999;padding:6px;font-size:11px">${p.notes?'備注：'+p.notes:''}</td></tr></tfoot></table><div style="margin-top:8px;font-size:10px;color:#888;border-top:1px solid #ccc;padding-top:6px">*遲到以月薪÷240換算時薪×分鐘數扣除　*病假有醫療證明扣半薪，無證明以事假論</div></div>`;
 }
 
 function printSlip() { window.print(); }
